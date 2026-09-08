@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
@@ -6,15 +7,14 @@ import Money from './pages/Money';
 import Leads from './pages/Leads';
 import Production from './pages/Production';
 import Projects from './pages/Projects';
+import Marketing from './pages/Marketing';
 import Invoices from './pages/Invoices';
 import Expenses from './pages/Expenses';
 import Bank from './pages/Bank';
 
-export type PageType = 'dashboard' | 'tasks' | 'money' | 'leads' | 'production' | 'projects' | 'invoices' | 'expenses' | 'bank';
-
-function App() {
-  const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+function AppContent() {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -24,6 +24,7 @@ function App() {
       case 'leads': return <Leads />;
       case 'production': return <Production />;
       case 'projects': return <Projects />;
+      case 'marketing': return <Marketing />;
       case 'invoices': return <Invoices />;
       case 'expenses': return <Expenses />;
       case 'bank': return <Bank />;
@@ -32,15 +33,19 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0f172a]">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       <Sidebar
         currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+        onPageChange={setCurrentPage}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
+      <main
+        className={`flex-1 overflow-y-auto transition-all duration-300 ${
+          sidebarOpen ? 'ml-64' : 'ml-16'
+        }`}
+      >
+        <div className="p-6 max-w-7xl mx-auto">
           {renderPage()}
         </div>
       </main>
@@ -48,4 +53,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
