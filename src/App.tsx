@@ -67,13 +67,22 @@ function AppContent() {
       >
         {/* Mobile Menu Button */}
         <div className="md:hidden sticky top-0 z-30 p-3 border-b" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-indigo-500/10 transition-all"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <i className="fas fa-bars text-lg"></i>
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-indigo-500/10 transition-all"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <i className="fas fa-bars text-lg"></i>
+            </button>
+            <button
+              onClick={() => setCurrentPage('data-manager')}
+              className="px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium hover:bg-emerald-500/30 transition-all flex items-center gap-1.5"
+            >
+              <i className="fas fa-upload"></i>
+              <span>Загрузить</span>
+            </button>
+          </div>
         </div>
 
         {/* Global Period Selector */}
@@ -101,9 +110,19 @@ function AppContent() {
                 ))}
               </select>
             </div>
-            <div className="text-sm text-slate-400">
-              <i className="fas fa-database mr-2"></i>
-              Данные за {months[selectedMonth]} {selectedYear}
+            <div className="flex items-center gap-2 md:gap-4 ml-auto">
+              <div className="text-sm text-slate-400 hidden md:block">
+                <i className="fas fa-database mr-2"></i>
+                Данные за {months[selectedMonth]} {selectedYear}
+              </div>
+              <button
+                onClick={() => setCurrentPage('data-manager')}
+                className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs md:text-sm font-semibold hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+              >
+                <i className="fas fa-upload"></i>
+                <span className="hidden sm:inline">Загрузить данные</span>
+                <span className="sm:hidden">Загрузить</span>
+              </button>
             </div>
           </div>
         </div>

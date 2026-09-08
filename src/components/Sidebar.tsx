@@ -38,7 +38,7 @@ const allMenuItems: Record<string, { label: string; icon: string; highlight?: bo
   bank: { label: 'Банк', icon: 'fas fa-university' },
   import: { label: '📥 Импорт данных', icon: 'fas fa-file-import', highlight: true },
   'sleeping-base': { label: 'Спящая база', icon: 'fas fa-bed' },
-  'data-manager': { label: '💾 Управление данными', icon: 'fas fa-database', highlight: true },
+  'data-manager': { label: 'Загрузка данных', icon: 'fas fa-cloud-upload-alt', highlight: true },
 };
 
 function SortableMenuItem({
@@ -75,14 +75,27 @@ function SortableMenuItem({
         <span {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
           ⋮⋮
         </span>
-        <i className={`${item.icon} w-5 text-center ${item.highlight ? 'text-emerald-400' : ''}`}></i>
-        {isOpen && (
+        {item.highlight ? (
+          <span className="flex items-center gap-2 flex-1">
+            <span className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <i className={`${item.icon} text-emerald-400`}></i>
+            </span>
+            {isOpen && (
+              <span className="font-semibold text-emerald-300 text-sm">{item.label}</span>
+            )}
+          </span>
+        ) : (
           <>
-            <span className={`flex-1 text-left ${item.highlight ? 'font-semibold text-emerald-300' : ''}`}>{item.label}</span>
-            {badge !== undefined && badge > 0 && (
-              <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
-                {badge}
-              </span>
+            <i className={`${item.icon} w-5 text-center`}></i>
+            {isOpen && (
+              <>
+                <span className="flex-1 text-left">{item.label}</span>
+                {badge !== undefined && badge > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
+                    {badge}
+                  </span>
+                )}
+              </>
             )}
           </>
         )}
@@ -98,6 +111,7 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
     const saved = localStorage.getItem('crm_menu_order');
     return saved ? JSON.parse(saved) : [
       'dashboard',
+      'data-manager',
       'tasks',
       'money',
       'leads',
@@ -110,6 +124,7 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
       'expenses',
       'bank',
       'import',
+      'sleeping-base',
     ];
   });
 
