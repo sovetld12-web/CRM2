@@ -53,6 +53,35 @@ export interface Project {
   sourceLeadId?: string;
   endDate?: string;
   responsible?: string;
+  contact?: string;
+  phone?: string;
+  firstCandidateDate?: string;
+  offerDate?: string;
+  workStartDate?: string;
+  paid?: number;
+  directCosts?: number;
+  expectedPaymentDate?: string;
+  paymentProbability?: number;
+  closingNorm?: number;
+  comment?: string;
+  pauseReason?: string;
+  pauseDate?: string;
+}
+
+export interface SleepingClient {
+  id: string;
+  client: string;
+  contact: string;
+  phone: string;
+  source: string;
+  product: string;
+  project: string;
+  ltv: number;
+  nextStep: string;
+  nextStepDate: string;
+  lastContactDate: string;
+  comment: string;
+  createdAt: string;
 }
 
 interface DataContextType {
@@ -60,6 +89,7 @@ interface DataContextType {
   tasks: Task[];
   moneyOperations: MoneyOperation[];
   projects: Project[];
+  sleepingClients: SleepingClient[];
   
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
@@ -75,6 +105,10 @@ interface DataContextType {
   addProject: (project: Omit<Project, 'id'>) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+  
+  addSleepingClient: (client: Omit<SleepingClient, 'id' | 'createdAt'>) => void;
+  updateSleepingClient: (id: string, updates: Partial<SleepingClient>) => void;
+  deleteSleepingClient: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -169,6 +203,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [sleepingClients, setSleepingClients] = useState<SleepingClient[]>(() => {
+    const saved = localStorage.getItem('crm_sleeping');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Сохранение в localStorage
   useEffect(() => {
     localStorage.setItem('crm_leads', JSON.stringify(leads));
@@ -185,6 +224,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('crm_projects', JSON.stringify(projects));
   }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem('crm_sleeping', JSON.stringify(sleepingClients));
+  }, [sleepingClients]);
 
   // ============ ЛИДЫ ============
   
@@ -368,6 +411,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
         };
         setTasks(prev => [newTask, ...prev]);
+
+        // Автоматически добавляем клиента в спящую базу
+        const existingClient = sleepingClients.find(c => c.client === updatedProject.client);
+        if (!existingClient) {
+          // Рассчитываем LTV клиента
+          const clientProjects = projects.filter(p => p.client === updatedProject.client && p.status === 'Закрыт');
+          const ltv = clientProjects.reduce((sum, p) => sum + p.sum, 0) + updatedProject.sum;
+
+          const newSleepingClient: SleepingClient = {
+            id: (Date.now() + 2).toString(),
+            client: updatedProject.client,
+            contact: updatedProject.contact || '',
+            phone: updatedProject.phone || '',
+            source: 'Завершенный проект',
+            product: updatedProject.vacancy,
+            project: updatedProject.vacancy,
+            ltv: ltv,
+            nextStep: 'Повторное касание',
+            nextStepDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            lastContactDate: new Date().toISOString().split('T')[0],
+            comment: `Проект завершен ${new Date().toLocaleDateString('ru-RU')}. Сумма: ${updatedProject.sum.toLocaleString('ru-RU')} ₽`,
+            createdAt: new Date().toISOString(),
+          };
+          setSleepingClients(prev => [newSleepingClient, ...prev]);
+        } else {
+          // Обновляем LTV существующего клиента
+          const clientProjects = projects.filter(p => p.client === existingClient.client && p.status === 'Закрыт');
+          const ltv = clientProjects.reduce((sum, p) => sum + p.sum, 0) + updatedProject.sum;
+          updateSleepingClient(existingClient.id, {
+            ltv: ltv,
+            lastContactDate: new Date().toISOString().split('T')[0],
+            comment: `${existingClient.comment}\n[ПРОЕКТ ЗАВЕРШЕН] ${new Date().toLocaleDateString('ru-RU')}: ${updatedProject.vacancy} (${updatedProject.sum.toLocaleString('ru-RU')} ₽)`,
+          });
+        }
       }
       
       return updatedProject;
@@ -376,6 +453,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteProject = (id: string) => {
     setProjects(prev => prev.filter(project => project.id !== id));
+  };
+
+  // ============ СПЯЩАЯ БАЗА ============
+  
+  const addSleepingClient = (clientData: Omit<SleepingClient, 'id' | 'createdAt'>) => {
+    const newClient: SleepingClient = {
+      ...clientData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setSleepingClients(prev => [newClient, ...prev]);
+  };
+
+  const updateSleepingClient = (id: string, updates: Partial<SleepingClient>) => {
+    setSleepingClients(prev => prev.map(client => 
+      client.id === id ? { ...client, ...updates } : client
+    ));
+  };
+
+  const deleteSleepingClient = (id: string) => {
+    setSleepingClients(prev => prev.filter(client => client.id !== id));
   };
 
   // ============ АВТОМАТИЧЕСКИЕ ЗАДАЧИ ============
@@ -413,6 +511,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       tasks,
       moneyOperations,
       projects,
+      sleepingClients,
       
       addLead,
       updateLead,
@@ -428,6 +527,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addProject,
       updateProject,
       deleteProject,
+      
+      addSleepingClient,
+      updateSleepingClient,
+      deleteSleepingClient,
     }}>
       {children}
     </DataContext.Provider>

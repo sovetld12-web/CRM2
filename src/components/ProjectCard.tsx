@@ -1,148 +1,286 @@
-interface Vacancy {
-  id: string;
-  startDate: string;
-  client: string;
-  vacancy: string;
-  firstCandidate: string;
-  offer: string;
-  days: number;
-  norm: number;
-  sum: number;
-  margin: number;
-  status: 'overdue' | 'normal' | 'closed';
-}
+import { useState } from 'react';
+import { Project } from '../contexts/DataContext';
 
 interface ProjectCardProps {
-  vacancy: Vacancy;
+  project: Project | null;
   onClose: () => void;
-  onCloseVacancy: () => void;
-  onDelete: () => void;
+  onSave: (project: Omit<Project, 'id'>) => void;
 }
 
-export default function ProjectCard({ vacancy, onClose, onCloseVacancy, onDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, onClose, onSave }: ProjectCardProps) {
+  const [formData, setFormData] = useState<Omit<Project, 'id'>>({
+    client: project?.client || '',
+    vacancy: project?.vacancy || '',
+    sum: project?.sum || 0,
+    days: project?.days || 0,
+    status: project?.status || 'В работе',
+    startDate: project?.startDate || new Date().toISOString().split('T')[0],
+    sourceLeadId: project?.sourceLeadId,
+    endDate: project?.endDate,
+    responsible: project?.responsible || 'Любовь',
+    contact: project?.contact || '',
+    phone: project?.phone || '',
+    firstCandidateDate: project?.firstCandidateDate || '',
+    offerDate: project?.offerDate || '',
+    workStartDate: project?.workStartDate || '',
+    paid: project?.paid || 0,
+    directCosts: project?.directCosts || 0,
+    expectedPaymentDate: project?.expectedPaymentDate || '',
+    paymentProbability: project?.paymentProbability || 100,
+    closingNorm: project?.closingNorm || 30,
+    comment: project?.comment || '',
+    pauseReason: project?.pauseReason,
+    pauseDate: project?.pauseDate,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="glass-card w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[16px] w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-              <i className="fas fa-briefcase text-white text-lg"></i>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{vacancy.vacancy}</h2>
-              <p className="text-sm text-slate-400">{vacancy.client}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700/50 text-slate-400">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-[16px]">
+          <h2 className="text-xl font-semibold text-gray-900">Карточка проекта</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors"
+          >
             <i className="fas fa-times"></i>
           </button>
         </div>
 
-        {/* Status Badge */}
-        <div className="mb-6">
-          <span className={`badge text-sm px-4 py-1 ${
-            vacancy.status === 'overdue' ? 'badge-danger' :
-            vacancy.status === 'closed' ? 'badge-success' : 'badge-info'
-          }`}>
-            {vacancy.status === 'overdue' ? '⚠️ Просрочено' : vacancy.status === 'closed' ? '✅ Закрыто' : '🔄 В работе'}
-          </span>
-        </div>
-
-        {/* Main Info */}
-        <div className="space-y-4">
-          {/* Timeline */}
-          <div className="p-4 rounded-lg bg-slate-800/30">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <i className="fas fa-clock text-indigo-400"></i>
-              Таймлайн
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Дата старта</p>
-                <p className="text-sm text-white">{vacancy.startDate}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Дней в работе</p>
-                <p className={`text-sm font-bold ${vacancy.days > vacancy.norm ? 'text-red-400' : 'text-emerald-400'}`}>
-                  {vacancy.days} / {vacancy.norm}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Первый кандидат</p>
-                <p className="text-sm text-white">{vacancy.firstCandidate}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Оффер</p>
-                <p className="text-sm text-white">{vacancy.offer}</p>
-              </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Row 1 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата старта
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Клиент *
+              </label>
+              <input
+                type="text"
+                value={formData.client}
+                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                placeholder="ООО Пример"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Проект / вакансия *
+              </label>
+              <input
+                type="text"
+                value={formData.vacancy}
+                onChange={(e) => setFormData({ ...formData, vacancy: e.target.value })}
+                placeholder="Менеджер по продажам, Разработка мотивации"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
             </div>
           </div>
 
-          {/* Financial */}
-          <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/20">
-            <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center gap-2">
-              <i className="fas fa-coins"></i>
-              Финансы
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Сумма проекта</p>
-                <p className="text-lg font-bold text-white">{vacancy.sum.toLocaleString('ru-RU')} ₽</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Маржа</p>
-                <p className="text-lg font-bold text-emerald-400">{vacancy.margin.toLocaleString('ru-RU')} ₽</p>
-              </div>
+          {/* Row 2 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата направления 1-го кандидата
+              </label>
+              <input
+                type="date"
+                value={formData.firstCandidateDate}
+                onChange={(e) => setFormData({ ...formData, firstCandidateDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата оффера
+              </label>
+              <input
+                type="date"
+                value={formData.offerDate}
+                onChange={(e) => setFormData({ ...formData, offerDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата выхода на работу
+              </label>
+              <input
+                type="date"
+                value={formData.workStartDate}
+                onChange={(e) => setFormData({ ...formData, workStartDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Сумма проекта (₽) *
+              </label>
+              <input
+                type="number"
+                value={formData.sum}
+                onChange={(e) => setFormData({ ...formData, sum: parseFloat(e.target.value) || 0 })}
+                placeholder="100000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
             </div>
           </div>
 
-          {/* Risk Alert */}
-          {vacancy.status === 'overdue' && (
-            <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
-              <h3 className="text-sm font-semibold text-red-300 mb-2 flex items-center gap-2">
-                <i className="fas fa-exclamation-triangle"></i>
-                Зона риска
-              </h3>
-              <p className="text-sm text-slate-300">
-                Вакансия в работе более {vacancy.norm} рабочих дней. 
-                Рекомендуется провести разбор: причина стопора, следующий кандидат, нужна ли замена стратегии поиска.
-              </p>
+          {/* Row 3 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Прямые затраты (₽)
+              </label>
+              <input
+                type="number"
+                value={formData.directCosts}
+                onChange={(e) => setFormData({ ...formData, directCosts: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-          )}
-        </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Ожидаемая дата оплаты
+              </label>
+              <input
+                type="date"
+                value={formData.expectedPaymentDate}
+                onChange={(e) => setFormData({ ...formData, expectedPaymentDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Вероятность оплаты, %
+              </label>
+              <input
+                type="number"
+                value={formData.paymentProbability}
+                onChange={(e) => setFormData({ ...formData, paymentProbability: parseFloat(e.target.value) || 0 })}
+                min="0"
+                max="100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Норматив закрытия, дней
+              </label>
+              <input
+                type="number"
+                value={formData.closingNorm}
+                onChange={(e) => setFormData({ ...formData, closingNorm: parseFloat(e.target.value) || 30 })}
+                min="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-700/50">
-          {vacancy.status !== 'closed' && (
+          {/* Row 4 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Контакт
+              </label>
+              <input
+                type="text"
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                placeholder="Иван Иванов"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Телефон / ник
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+7 999 123-45-67"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Внесено (₽)
+              </label>
+              <input
+                type="number"
+                value={formData.paid}
+                onChange={(e) => setFormData({ ...formData, paid: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Ответственный
+              </label>
+              <input
+                type="text"
+                value={formData.responsible}
+                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                placeholder="Любовь"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Комментарий
+            </label>
+            <textarea
+              value={formData.comment}
+              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+              placeholder="Создано автоматически из лида: Ксения. Первый кандидат направлен 05.05..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
             <button
-              onClick={() => {
-                onCloseVacancy();
-                onClose();
-              }}
-              className="px-4 py-2 rounded-lg text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
+              type="submit"
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              <i className="fas fa-check mr-2"></i>Закрыть вакансию
+              Сохранить проект
             </button>
-          )}
-          <button
-            onClick={() => {
-              if (confirm('Удалить эту вакансию?')) {
-                onDelete();
-                onClose();
-              }
-            }}
-            className="px-4 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
-          >
-            <i className="fas fa-trash mr-2"></i>Удалить
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-slate-300 bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-all"
-          >
-            Закрыть
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

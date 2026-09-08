@@ -15,6 +15,7 @@ import Marketing from './pages/Marketing';
 import AIAssistant from './pages/AIAssistant';
 import Documents from './pages/Documents';
 import Import from './pages/Import';
+import SleepingBase from './pages/SleepingBase';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -35,6 +36,7 @@ function AppContent() {
       case 'expenses': return <Expenses />;
       case 'bank': return <Bank />;
       case 'import': return <Import />;
+      case 'sleeping-base': return <SleepingBase />;
       default: return <Dashboard />;
     }
   };

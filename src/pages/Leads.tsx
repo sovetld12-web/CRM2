@@ -224,14 +224,13 @@ export default function Leads() {
         <LeadCard
           lead={selectedLead}
           onClose={() => setSelectedLead(null)}
-          onUpdate={(id, updates) => {
-            updateLead(id, updates);
-            setSelectedLead({ ...selectedLead, ...updates });
-          }}
-          onDelete={(id) => {
-            deleteLead(id);
+          onSave={(leadData) => {
+            if (selectedLead.id) {
+              updateLead(selectedLead.id, leadData);
+            }
             setSelectedLead(null);
           }}
+          onNew={() => {}}
         />
       )}
 

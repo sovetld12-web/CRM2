@@ -37,6 +37,7 @@ const allMenuItems: Record<string, { label: string; icon: string }> = {
   expenses: { label: 'Затраты', icon: 'fas fa-receipt' },
   bank: { label: 'Банк', icon: 'fas fa-university' },
   import: { label: 'Импорт данных', icon: 'fas fa-file-import' },
+  'sleeping-base': { label: 'Спящая база', icon: 'fas fa-bed' },
 };
 
 function SortableMenuItem({

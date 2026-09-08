@@ -1,143 +1,352 @@
+import { useState } from 'react';
 import { Lead } from '../contexts/DataContext';
 
 interface LeadCardProps {
-  lead: Lead;
+  lead: Lead | null;
   onClose: () => void;
-  onUpdate: (id: string, updates: Partial<Lead>) => void;
-  onDelete: (id: string) => void;
+  onSave: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
+  onNew?: () => void;
 }
 
-export default function LeadCard({ lead, onClose, onUpdate, onDelete }: LeadCardProps) {
-  const stages = ['Заявка', 'Диагностика', 'КП', 'Договор заключен', 'Продажа', 'Отказ', 'Клиент не отвечает', 'Спящая база'];
+export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps) {
+  const [formData, setFormData] = useState<Omit<Lead, 'id' | 'createdAt'>>({
+    date: lead?.date || new Date().toISOString().split('T')[0],
+    company: lead?.company || '',
+    contact: lead?.contact || '',
+    phone: lead?.phone || '',
+    source: lead?.source || 'Профи',
+    stage: lead?.stage || 'Заявка',
+    product: lead?.product || 'Рекрутинг',
+    project: lead?.project || '',
+    sum: lead?.sum || 0,
+    paid: lead?.paid || 0,
+    nextStep: lead?.nextStep || '',
+    nextStepDate: lead?.nextStepDate || '',
+    responsible: lead?.responsible || 'Любовь',
+    comment: lead?.comment || '',
+  });
+
+  const sources = [
+    'Профи',
+    'HH',
+    'Авито',
+    'Telegram',
+    'Instagram',
+    'Рекомендация',
+    'Повторный клиент',
+    'Сайт',
+    'Другое'
+  ];
+
+  const stages = [
+    'Новая заявка',
+    'Заявка',
+    'Связались',
+    'Созвон',
+    'Предложение',
+    'Переговоры',
+    'Договор',
+    'Оплачено',
+    'Отказ',
+    'Отложено',
+    'Спящая база'
+  ];
+
+  const products = [
+    'Рекрутинг',
+    'Консалтинг',
+    'HR-сопровождение',
+    'Разработка мотивации',
+    'Адаптация / обучение',
+    'HR-аудит',
+    'Разработка HR-системы',
+    'Другой продукт'
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+    if (onNew) {
+      // Если нажата кнопка "Новая запись", очищаем форму
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        company: '',
+        contact: '',
+        phone: '',
+        source: 'Профи',
+        stage: 'Заявка',
+        product: 'Рекрутинг',
+        project: '',
+        sum: 0,
+        paid: 0,
+        nextStep: '',
+        nextStepDate: '',
+        responsible: 'Любовь',
+        comment: '',
+      });
+    } else {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-      <div className="glass-card w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ position: 'relative', zIndex: 10000 }}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[16px] w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-              <i className="fas fa-user text-white text-lg"></i>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{lead.contact}</h2>
-              <p className="text-sm text-slate-400">{lead.company || 'Без компании'}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700/50 text-slate-400">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-[16px]">
+          <h2 className="text-xl font-semibold text-gray-900">Редактирование лида</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors"
+          >
             <i className="fas fa-times"></i>
           </button>
         </div>
 
-        {/* Main Info */}
-        <div className="space-y-4">
-          {/* Contact Info */}
-          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-slate-800/30">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Row 1 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-slate-400 mb-1">Телефон / Ник</p>
-              <p className="text-sm text-white">{lead.phone || '—'}</p>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата заявки
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-1">Источник</p>
-              <span className="badge badge-info">{lead.source}</span>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Компания
+              </label>
+              <input
+                type="text"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                placeholder="ООО Пример"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-1">Дата создания</p>
-              <p className="text-sm text-white">{lead.date}</p>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Контакт *
+              </label>
+              <input
+                type="text"
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                placeholder="Иван Иванов"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-1">Ответственный</p>
-              <p className="text-sm text-white">{lead.responsible}</p>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Телефон / ник
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+7 999 123-45-67 или @username"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
 
-          {/* Deal Info */}
-          <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/20">
-            <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center gap-2">
-              <i className="fas fa-handshake"></i>
-              Информация о сделке
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Продукт</p>
-                <p className="text-sm text-white">{lead.product}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Проект / Вакансия</p>
-                <p className="text-sm text-white">{lead.project || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Сумма</p>
-                <p className="text-lg font-bold text-white">{lead.sum.toLocaleString('ru-RU')} ₽</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Оплачено</p>
-                <p className="text-lg font-bold text-emerald-400">{lead.paid.toLocaleString('ru-RU')} ₽</p>
-              </div>
+          {/* Row 2 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Источник *
+              </label>
+              <select
+                value={formData.source}
+                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                {sources.map((source) => (
+                  <option key={source} value={source}>{source}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Этап *
+              </label>
+              <select
+                value={formData.stage}
+                onChange={(e) => setFormData({ ...formData, stage: e.target.value as Lead['stage'] })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                {stages.map((stage) => (
+                  <option key={stage} value={stage}>{stage}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Продукт *
+              </label>
+              <select
+                value={formData.product}
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                {products.map((product) => (
+                  <option key={product} value={product}>{product}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Сумма (₽) *
+              </label>
+              <input
+                type="number"
+                value={formData.sum}
+                onChange={(e) => setFormData({ ...formData, sum: parseFloat(e.target.value) || 0 })}
+                placeholder="50000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
             </div>
           </div>
 
-          {/* Stage */}
-          <div className="p-4 rounded-lg bg-slate-800/30">
-            <p className="text-xs text-slate-400 mb-2">Этап воронки</p>
-            <select
-              value={lead.stage}
-              onChange={(e) => onUpdate(lead.id, { stage: e.target.value as Lead['stage'] })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-            >
-              {stages.map((stage) => (
-                <option key={stage} value={stage}>{stage}</option>
-              ))}
-            </select>
+          {/* Row 3 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Внесено (₽)
+              </label>
+              <input
+                type="number"
+                value={formData.paid}
+                onChange={(e) => setFormData({ ...formData, paid: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Проект / вакансия
+              </label>
+              <input
+                type="text"
+                value={formData.project}
+                onChange={(e) => setFormData({ ...formData, project: e.target.value })}
+                placeholder="Менеджер по продажам, Разработка мотивации"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
 
-          {/* Next Step */}
-          <div className="p-4 rounded-lg bg-slate-800/30">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <i className="fas fa-tasks text-cyan-400"></i>
-              Следующий шаг
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Действие</p>
-                <p className="text-sm text-white">{lead.nextStep || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Дата</p>
-                <p className="text-sm text-white">{lead.nextStepDate || '—'}</p>
-              </div>
+          {/* Row 4 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Следующий шаг
+              </label>
+              <input
+                type="text"
+                value={formData.nextStep}
+                onChange={(e) => setFormData({ ...formData, nextStep: e.target.value })}
+                placeholder="Вывести на созвон, Отправить договор"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Дата следующего шага
+              </label>
+              <input
+                type="date"
+                value={formData.nextStepDate}
+                onChange={(e) => setFormData({ ...formData, nextStepDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Ответственный
+              </label>
+              <input
+                type="text"
+                value={formData.responsible}
+                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                placeholder="Любовь"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
 
           {/* Comment */}
-          {lead.comment && (
-            <div className="p-4 rounded-lg bg-slate-800/30">
-              <p className="text-xs text-slate-400 mb-1">Комментарий</p>
-              <p className="text-sm text-white">{lead.comment}</p>
-            </div>
-          )}
-        </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Комментарий
+            </label>
+            <textarea
+              value={formData.comment}
+              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+              placeholder="Для кого KPI: нужна помощь с построением логики KPI..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-700/50">
-          <button
-            onClick={() => {
-              if (confirm('Удалить этот лид?')) {
-                onDelete(lead.id);
-                onClose();
-              }
-            }}
-            className="px-4 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
-          >
-            <i className="fas fa-trash mr-2"></i>Удалить
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-slate-300 bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-all"
-          >
-            Закрыть
-          </button>
-        </div>
+          {/* Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Сохранить лид
+              </button>
+              {onNew && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSave(formData);
+                    setFormData({
+                      date: new Date().toISOString().split('T')[0],
+                      company: '',
+                      contact: '',
+                      phone: '',
+                      source: 'Профи',
+                      stage: 'Заявка',
+                      product: 'Рекрутинг',
+                      project: '',
+                      sum: 0,
+                      paid: 0,
+                      nextStep: '',
+                      nextStepDate: '',
+                      responsible: 'Любовь',
+                      comment: '',
+                    });
+                  }}
+                  className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Новая запись
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
