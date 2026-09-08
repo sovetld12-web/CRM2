@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useData, Lead } from '../contexts/DataContext';
+import LeadCard from '../components/LeadCard';
+import ClientCard from '../components/ClientCard';
 
 type LeadStage = Lead['stage'];
 
 export default function Leads() {
-  const { leads, addLead, updateLead, deleteLead } = useData();
+  const { leads, projects, addLead, updateLead, deleteLead } = useData();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'sleeping'>('all');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     date: new Date().toLocaleDateString('ru-RU'),
     company: '',
@@ -159,8 +163,24 @@ export default function Leads() {
             {filteredLeads.map((lead) => (
               <tr key={lead.id} className="table-row">
                 <td className="py-3 text-slate-400 text-xs">{lead.date}</td>
-                <td className="py-3 text-white font-medium">{lead.contact}</td>
-                <td className="py-3 text-slate-300">{lead.company || '—'}</td>
+                <td 
+                  className="py-3 text-white font-medium cursor-pointer hover:text-indigo-300 transition-colors"
+                  onClick={() => setSelectedLead(lead)}
+                >
+                  <i className="fas fa-user-circle mr-2 text-indigo-400"></i>
+                  {lead.contact}
+                </td>
+                <td 
+                  className={`py-3 cursor-pointer transition-colors ${lead.company ? 'text-slate-300 hover:text-cyan-300' : 'text-slate-500'}`}
+                  onClick={() => lead.company && setSelectedClient(lead.company)}
+                >
+                  {lead.company ? (
+                    <>
+                      <i className="fas fa-building mr-2 text-cyan-400"></i>
+                      {lead.company}
+                    </>
+                  ) : '—'}
+                </td>
                 <td className="py-3">
                   <span className="badge badge-info">{lead.source}</span>
                 </td>
@@ -177,8 +197,19 @@ export default function Leads() {
                 </td>
                 <td className="py-3 text-slate-400">{lead.product}</td>
                 <td className="py-3 text-right text-white font-medium">{lead.sum.toLocaleString('ru-RU')} ₽</td>
-                <td className="py-3 text-center">
-                  <button onClick={() => deleteLead(lead.id)} className="text-xs text-red-400 hover:text-red-300">
+                <td className="py-3 text-center space-x-2">
+                  <button 
+                    onClick={() => setSelectedLead(lead)} 
+                    className="text-xs text-indigo-400 hover:text-indigo-300"
+                    title="Открыть карточку"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
+                  <button 
+                    onClick={() => deleteLead(lead.id)} 
+                    className="text-xs text-red-400 hover:text-red-300"
+                    title="Удалить"
+                  >
                     <i className="fas fa-trash"></i>
                   </button>
                 </td>
@@ -187,6 +218,36 @@ export default function Leads() {
           </tbody>
         </table>
       </div>
+
+      {/* Lead Card Modal */}
+      {selectedLead && (
+        <LeadCard
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onUpdate={(id, updates) => {
+            updateLead(id, updates);
+            setSelectedLead({ ...selectedLead, ...updates });
+          }}
+          onDelete={(id) => {
+            deleteLead(id);
+            setSelectedLead(null);
+          }}
+        />
+      )}
+
+      {/* Client Card Modal */}
+      {selectedClient && (
+        <ClientCard
+          companyName={selectedClient}
+          leads={leads}
+          projects={projects}
+          onClose={() => setSelectedClient(null)}
+          onOpenLead={(lead) => {
+            setSelectedClient(null);
+            setSelectedLead(lead);
+          }}
+        />
+      )}
 
       {/* Add Form Modal */}
       {showForm && (

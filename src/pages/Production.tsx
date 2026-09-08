@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ProjectCard from '../components/ProjectCard';
+import ClientCard from '../components/ClientCard';
 
 interface Vacancy {
   id: string;
@@ -15,6 +17,9 @@ interface Vacancy {
 }
 
 export default function Production() {
+  const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  
   const [vacancies, setVacancies] = useState<Vacancy[]>([
     { id: '1', startDate: '30.04.2026', client: 'ДК Дюкарева', vacancy: 'МОП', firstCandidate: '05.05.2026', offer: '22.05.2026', days: 94, norm: 30, sum: 75000, margin: 75000, status: 'overdue' },
     { id: '2', startDate: '15.05.2026', client: 'Цивиоми', vacancy: 'подбор бухгалтера', firstCandidate: '19.05.2026', offer: '—', days: 83, norm: 30, sum: 75000, margin: 75000, status: 'overdue' },
@@ -117,8 +122,20 @@ export default function Production() {
             {vacancies.map((v) => (
               <tr key={v.id} className="table-row">
                 <td className="py-3 text-slate-400 text-xs">{v.startDate}</td>
-                <td className="py-3 text-white font-medium">{v.client}</td>
-                <td className="py-3 text-slate-300">{v.vacancy}</td>
+                <td 
+                  className="py-3 text-white font-medium cursor-pointer hover:text-cyan-300 transition-colors"
+                  onClick={() => setSelectedClient(v.client)}
+                >
+                  <i className="fas fa-building mr-2 text-cyan-400"></i>
+                  {v.client}
+                </td>
+                <td 
+                  className="py-3 text-slate-300 cursor-pointer hover:text-indigo-300 transition-colors"
+                  onClick={() => setSelectedVacancy(v)}
+                >
+                  <i className="fas fa-briefcase mr-2 text-indigo-400"></i>
+                  {v.vacancy}
+                </td>
                 <td className="py-3 text-center">
                   <span className={`text-xs font-medium ${v.days > v.norm ? 'text-red-400' : 'text-emerald-400'}`}>
                     {v.days} / {v.norm}
@@ -134,6 +151,13 @@ export default function Production() {
                   </span>
                 </td>
                 <td className="py-3 text-center space-x-2">
+                  <button
+                    onClick={() => setSelectedVacancy(v)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300"
+                    title="Открыть карточку"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
                   {v.status !== 'closed' && (
                     <button
                       onClick={() => closeVacancy(v.id)}
@@ -156,6 +180,27 @@ export default function Production() {
           </tbody>
         </table>
       </div>
+
+      {/* Project Card Modal */}
+      {selectedVacancy && (
+        <ProjectCard
+          vacancy={selectedVacancy}
+          onClose={() => setSelectedVacancy(null)}
+          onCloseVacancy={() => closeVacancy(selectedVacancy.id)}
+          onDelete={() => deleteVacancy(selectedVacancy.id)}
+        />
+      )}
+
+      {/* Client Card Modal */}
+      {selectedClient && (
+        <ClientCard
+          companyName={selectedClient}
+          leads={[]}
+          projects={[]}
+          onClose={() => setSelectedClient(null)}
+          onOpenLead={() => {}}
+        />
+      )}
 
       {/* Add Form Modal */}
       {showForm && (
