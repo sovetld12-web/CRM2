@@ -91,13 +91,13 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-[16px] w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="glass-card w-full max-w-[1000px] max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-[16px]">
-          <h2 className="text-xl font-semibold text-gray-900">Редактирование лида</h2>
+        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 flex items-center justify-between rounded-t-[16px]">
+          <h2 className="text-xl font-semibold text-white">Редактирование лида</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700/50 text-slate-400 transition-colors"
           >
             <i className="fas fa-times"></i>
           </button>
@@ -108,19 +108,19 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
           {/* Row 1 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Дата заявки
               </label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Компания
               </label>
               <input
@@ -128,11 +128,11 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 placeholder="ООО Пример"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Контакт *
               </label>
               <input
@@ -140,12 +140,12 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
                 value={formData.contact}
                 onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                 placeholder="Иван Иванов"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Телефон / ник
               </label>
               <input
@@ -153,7 +153,7 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+7 999 123-45-67 или @username"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
               />
             </div>
           </div>
