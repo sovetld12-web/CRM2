@@ -62,15 +62,26 @@ function AppContent() {
       />
       <main
         className={`flex-1 overflow-y-auto transition-all duration-300 ${
-          sidebarOpen ? 'ml-64' : 'ml-16'
+          sidebarOpen ? 'ml-0 md:ml-64' : 'ml-0 md:ml-16'
         }`}
       >
+        {/* Mobile Menu Button */}
+        <div className="md:hidden sticky top-0 z-30 p-3 border-b" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-indigo-500/10 transition-all"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <i className="fas fa-bars text-lg"></i>
+          </button>
+        </div>
+
         {/* Global Period Selector */}
-        <div className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="sticky top-0 md:top-0 z-40 backdrop-blur-md border-b" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <i className="fas fa-calendar-alt text-indigo-400"></i>
-              <span className="text-sm text-slate-400">Период:</span>
+              <span className="text-xs md:text-sm text-slate-400">Период:</span>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}

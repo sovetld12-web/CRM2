@@ -23,7 +23,7 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-const allMenuItems: Record<string, { label: string; icon: string }> = {
+const allMenuItems: Record<string, { label: string; icon: string; highlight?: boolean }> = {
   dashboard: { label: 'Центр управления', icon: 'fas fa-chart-line' },
   tasks: { label: 'Задачи', icon: 'fas fa-tasks' },
   money: { label: 'Деньги', icon: 'fas fa-wallet' },
@@ -36,9 +36,9 @@ const allMenuItems: Record<string, { label: string; icon: string }> = {
   invoices: { label: 'Счета', icon: 'fas fa-file-invoice' },
   expenses: { label: 'Затраты', icon: 'fas fa-receipt' },
   bank: { label: 'Банк', icon: 'fas fa-university' },
-  import: { label: 'Импорт данных', icon: 'fas fa-file-import' },
+  import: { label: '📥 Импорт данных', icon: 'fas fa-file-import', highlight: true },
   'sleeping-base': { label: 'Спящая база', icon: 'fas fa-bed' },
-  'data-manager': { label: 'Управление данными', icon: 'fas fa-database' },
+  'data-manager': { label: '💾 Управление данными', icon: 'fas fa-database', highlight: true },
 };
 
 function SortableMenuItem({
@@ -69,16 +69,16 @@ function SortableMenuItem({
     <li ref={setNodeRef} style={style} {...attributes}>
       <button
         onClick={() => onPageChange(id)}
-        className={`sidebar-item w-full ${currentPage === id ? 'active' : ''}`}
+        className={`sidebar-item w-full ${currentPage === id ? 'active' : ''} ${item.highlight ? 'border-l-2 border-l-emerald-500' : ''}`}
         title={!isOpen ? item.label : undefined}
       >
         <span {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
           ⋮⋮
         </span>
-        <i className={`${item.icon} w-5 text-center`}></i>
+        <i className={`${item.icon} w-5 text-center ${item.highlight ? 'text-emerald-400' : ''}`}></i>
         {isOpen && (
           <>
-            <span className="flex-1 text-left">{item.label}</span>
+            <span className={`flex-1 text-left ${item.highlight ? 'font-semibold text-emerald-300' : ''}`}>{item.label}</span>
             {badge !== undefined && badge > 0 && (
               <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
                 {badge}
@@ -131,29 +131,39 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
   };
 
   return (
-    <aside
-      className={`sidebar-container fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
-        isOpen ? 'w-64' : 'w-16'
-      }`}
-    >
-      {/* Logo */}
-      <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: 'var(--border-color)' }}>
-        {isOpen && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
-              <i className="fas fa-rocket text-white text-sm"></i>
-            </div>
-            <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Команда Роста</span>
-          </div>
-        )}
-        <button
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={onToggle}
-          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-indigo-500/10 transition-all"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <i className={`fas ${isOpen ? 'fa-chevron-left' : 'fa-chevron-right'} text-xs`}></i>
-        </button>
-      </div>
+        />
+      )}
+      
+      <aside
+        className={`sidebar-container fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
+          isOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 w-16'
+        }`}
+      >
+        {/* Logo */}
+        <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: 'var(--border-color)' }}>
+          {isOpen && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
+                <i className="fas fa-rocket text-white text-sm"></i>
+              </div>
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Команда Роста</span>
+            </div>
+          )}
+          <button
+            onClick={onToggle}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-indigo-500/10 transition-all"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <i className={`fas ${isOpen ? 'fa-times md:hidden' : 'fa-bars'} text-xs`}></i>
+            <i className={`fas ${isOpen ? 'fa-chevron-left' : 'fa-chevron-right'} text-xs hidden md:block`}></i>
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className="p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
@@ -208,5 +218,6 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
         )}
       </div>
     </aside>
+    </>
   );
 }
