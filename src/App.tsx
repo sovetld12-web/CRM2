@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { DataProvider } from './contexts/DataContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
@@ -7,10 +8,10 @@ import Money from './pages/Money';
 import Leads from './pages/Leads';
 import Production from './pages/Production';
 import Projects from './pages/Projects';
-import Marketing from './pages/Marketing';
 import Invoices from './pages/Invoices';
 import Expenses from './pages/Expenses';
 import Bank from './pages/Bank';
+import Marketing from './pages/Marketing';
 import AIAssistant from './pages/AIAssistant';
 import Documents from './pages/Documents';
 
@@ -27,11 +28,11 @@ function AppContent() {
       case 'production': return <Production />;
       case 'projects': return <Projects />;
       case 'marketing': return <Marketing />;
+      case 'ai-assistant': return <AIAssistant />;
+      case 'documents': return <Documents />;
       case 'invoices': return <Invoices />;
       case 'expenses': return <Expenses />;
       case 'bank': return <Bank />;
-      case 'ai-assistant': return <AIAssistant />;
-      case 'documents': return <Documents />;
       default: return <Dashboard />;
     }
   };
@@ -60,7 +61,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <DataProvider>
+        <AppContent />
+      </DataProvider>
     </ThemeProvider>
   );
 }
