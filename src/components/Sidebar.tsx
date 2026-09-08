@@ -123,7 +123,6 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
       'invoices',
       'expenses',
       'bank',
-      'import',
       'sleeping-base',
     ];
   });

@@ -176,11 +176,16 @@ export default function SleepingBase() {
             className="px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
           >
             <option value="">Все источники</option>
-            <option value="Профи">Профи</option>
+            <option value="Аномалия">Аномалия</option>
+            <option value="Профи.ру">Профи.ру</option>
+            <option value="Партнерка">Партнерка</option>
+            <option value="Действующий клиент">Действующий клиент</option>
+            <option value="Спящая база">Спящая база</option>
             <option value="HH">HH</option>
-            <option value="Авито">Авито</option>
-            <option value="Рекомендация">Рекомендация</option>
-            <option value="Повторный клиент">Повторный клиент</option>
+            <option value="Сайт">Сайт</option>
+            <option value="Телеграм рассылка">Телеграм рассылка</option>
+            <option value="Бизнес клубы">Бизнес клубы</option>
+            <option value="Рекомендации">Рекомендации</option>
           </select>
           <input
             type="number"
@@ -355,18 +360,23 @@ export default function SleepingBase() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Источник *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Источник *</label>
                   <select
                     name="source"
-                    defaultValue={selectedClient?.source || 'Профи'}
+                    defaultValue={selectedClient?.source || 'Аномалия'}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
                   >
-                    <option value="Профи">Профи</option>
+                    <option value="Аномалия">Аномалия</option>
+                    <option value="Профи.ру">Профи.ру</option>
+                    <option value="Партнерка">Партнерка</option>
+                    <option value="Действующий клиент">Действующий клиент</option>
+                    <option value="Спящая база">Спящая база</option>
                     <option value="HH">HH</option>
-                    <option value="Авито">Авито</option>
-                    <option value="Рекомендация">Рекомендация</option>
-                    <option value="Повторный клиент">Повторный клиент</option>
+                    <option value="Сайт">Сайт</option>
+                    <option value="Телеграм рассылка">Телеграм рассылка</option>
+                    <option value="Бизнес клубы">Бизнес клубы</option>
+                    <option value="Рекомендации">Рекомендации</option>
                   </select>
                 </div>
               </div>

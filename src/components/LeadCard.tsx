@@ -27,15 +27,16 @@ export default function LeadCard({ lead, onClose, onSave, onNew }: LeadCardProps
   });
 
   const sources = [
-    'Профи',
+    'Аномалия',
+    'Профи.ру',
+    'Партнерка',
+    'Действующий клиент',
+    'Спящая база',
     'HH',
-    'Авито',
-    'Telegram',
-    'Instagram',
-    'Рекомендация',
-    'Повторный клиент',
     'Сайт',
-    'Другое'
+    'Телеграм рассылка',
+    'Бизнес клубы',
+    'Рекомендации'
   ];
 
   const stages = [

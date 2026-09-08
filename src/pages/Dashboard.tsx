@@ -48,11 +48,16 @@ export default function Dashboard() {
 
   // Источники лидов
   const sourceData = [
-    { name: 'Профи', value: filteredLeads.filter(l => l.source === 'Профи').length, color: '#6366f1' },
-    { name: 'Авито', value: filteredLeads.filter(l => l.source === 'Авито').length, color: '#06b6d4' },
-    { name: 'hh.ru', value: filteredLeads.filter(l => l.source === 'hh.ru').length, color: '#ef4444' },
-    { name: 'Рекомендация', value: filteredLeads.filter(l => l.source === 'Рекомендация').length, color: '#f59e0b' },
-    { name: 'Другое', value: filteredLeads.filter(l => !['Профи', 'Авито', 'hh.ru', 'Рекомендация'].includes(l.source)).length, color: '#8b5cf6' },
+    { name: 'Аномалия', value: filteredLeads.filter(l => l.source === 'Аномалия').length, color: '#6366f1' },
+    { name: 'Профи.ру', value: filteredLeads.filter(l => l.source === 'Профи.ру').length, color: '#06b6d4' },
+    { name: 'Партнерка', value: filteredLeads.filter(l => l.source === 'Партнерка').length, color: '#10b981' },
+    { name: 'Действующий клиент', value: filteredLeads.filter(l => l.source === 'Действующий клиент').length, color: '#f59e0b' },
+    { name: 'Спящая база', value: filteredLeads.filter(l => l.source === 'Спящая база').length, color: '#8b5cf6' },
+    { name: 'HH', value: filteredLeads.filter(l => l.source === 'HH').length, color: '#ef4444' },
+    { name: 'Сайт', value: filteredLeads.filter(l => l.source === 'Сайт').length, color: '#ec4899' },
+    { name: 'Телеграм рассылка', value: filteredLeads.filter(l => l.source === 'Телеграм рассылка').length, color: '#14b8a6' },
+    { name: 'Бизнес клубы', value: filteredLeads.filter(l => l.source === 'Бизнес клубы').length, color: '#f97316' },
+    { name: 'Рекомендации', value: filteredLeads.filter(l => l.source === 'Рекомендации').length, color: '#a855f7' },
   ].filter(s => s.value > 0);
 
   const monthNames = [

@@ -39,7 +39,6 @@ export default function AIAssistant() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getSavedApiKey() || '');
-  const [showClientForm, setShowClientForm] = useState(false);
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     date: new Date().toISOString().split('T')[0],
     contact: '',
@@ -345,24 +344,15 @@ export default function AIAssistant() {
         </div>
       )}
 
-      {/* Client Info Form for Sales Tab */}
+      {/* Client Info Form for Sales Tab - всегда видима */}
       {activeTab === 'sales' && (
         <div className="glass-card p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <i className="fas fa-user-plus text-indigo-400"></i>
-              Информация о клиенте
-            </h3>
-            <button
-              onClick={() => setShowClientForm(!showClientForm)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-            >
-              {showClientForm ? 'Скрыть форму' : 'Показать форму'}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+            <i className="fas fa-user-plus text-indigo-400"></i>
+            Информация о клиенте
+          </h3>
           
-          {showClientForm && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="text-xs text-slate-400 mb-1 block">Дата обращения</label>
                 <input
@@ -409,11 +399,16 @@ export default function AIAssistant() {
                   onChange={(e) => setClientInfo({ ...clientInfo, source: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
                 >
-                  <option value="Профи">Профи</option>
-                  <option value="Авито">Авито</option>
-                  <option value="hh.ru">hh.ru</option>
-                  <option value="Рекомендация">Рекомендация</option>
-                  <option value="Другое">Другое</option>
+                  <option value="Аномалия">Аномалия</option>
+                  <option value="Профи.ру">Профи.ру</option>
+                  <option value="Партнерка">Партнерка</option>
+                  <option value="Действующий клиент">Действующий клиент</option>
+                  <option value="Спящая база">Спящая база</option>
+                  <option value="HH">HH</option>
+                  <option value="Сайт">Сайт</option>
+                  <option value="Телеграм рассылка">Телеграм рассылка</option>
+                  <option value="Бизнес клубы">Бизнес клубы</option>
+                  <option value="Рекомендации">Рекомендации</option>
                 </select>
               </div>
               <div>
@@ -451,15 +446,6 @@ export default function AIAssistant() {
                 />
               </div>
             </div>
-          )}
-          
-          {!showClientForm && clientInfo.contact && (
-            <div className="text-xs text-slate-400">
-              <i className="fas fa-check-circle text-emerald-400 mr-1"></i>
-              Клиент: <span className="text-white">{clientInfo.contact}</span>
-              {clientInfo.company && <span className="ml-2">({clientInfo.company})</span>}
-            </div>
-          )}
         </div>
       )}
 
