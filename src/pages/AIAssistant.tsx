@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { sendToOpenAI, isApiConfigured, getCurrentModel, AIMessage, AssistantMode, saveApiKey, getSavedApiKey } from '../services/ai';
+import { useData } from '../contexts/DataContext';
 
 interface ChatMessage {
   id: string;
@@ -10,9 +11,21 @@ interface ChatMessage {
   error?: boolean;
 }
 
+interface ClientInfo {
+  date: string;
+  contact: string;
+  company: string;
+  phone: string;
+  source: string;
+  product: string;
+  sum: number;
+  project: string;
+}
+
 type TabMode = 'sales' | 'chat';
 
 export default function AIAssistant() {
+  const { addLead } = useData();
   const [activeTab, setActiveTab] = useState<TabMode>('chat');
   const [messages, setMessages] = useState<Record<TabMode, ChatMessage[]>>({
     sales: [],
@@ -26,6 +39,17 @@ export default function AIAssistant() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getSavedApiKey() || '');
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [clientInfo, setClientInfo] = useState<ClientInfo>({
+    date: new Date().toISOString().split('T')[0],
+    contact: '',
+    company: '',
+    phone: '',
+    source: 'Профи',
+    product: 'Рекрутинг',
+    sum: 0,
+    project: '',
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -72,6 +96,26 @@ export default function AIAssistant() {
         ],
       }));
       return;
+    }
+
+    // Автоматическое создание лида в конструкторе ответов
+    if (activeTab === 'sales' && clientInfo.contact) {
+      addLead({
+        date: clientInfo.date,
+        company: clientInfo.company,
+        contact: clientInfo.contact,
+        phone: clientInfo.phone,
+        source: clientInfo.source,
+        stage: 'Заявка',
+        product: clientInfo.product,
+        project: clientInfo.project,
+        sum: clientInfo.sum,
+        paid: 0,
+        nextStep: '',
+        nextStepDate: '',
+        responsible: 'Любовь',
+        comment: `Запрос клиента: ${input.trim().substring(0, 200)}...`,
+      });
     }
 
     const userMessage: ChatMessage = {
@@ -298,6 +342,124 @@ export default function AIAssistant() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Client Info Form for Sales Tab */}
+      {activeTab === 'sales' && (
+        <div className="glass-card p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <i className="fas fa-user-plus text-indigo-400"></i>
+              Информация о клиенте
+            </h3>
+            <button
+              onClick={() => setShowClientForm(!showClientForm)}
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              {showClientForm ? 'Скрыть форму' : 'Показать форму'}
+            </button>
+          </div>
+          
+          {showClientForm && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Дата обращения</label>
+                <input
+                  type="date"
+                  value={clientInfo.date}
+                  onChange={(e) => setClientInfo({ ...clientInfo, date: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Имя контакта *</label>
+                <input
+                  type="text"
+                  value={clientInfo.contact}
+                  onChange={(e) => setClientInfo({ ...clientInfo, contact: e.target.value })}
+                  placeholder="Иван Иванов"
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Компания</label>
+                <input
+                  type="text"
+                  value={clientInfo.company}
+                  onChange={(e) => setClientInfo({ ...clientInfo, company: e.target.value })}
+                  placeholder="ООО Пример"
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Телефон / ник</label>
+                <input
+                  type="text"
+                  value={clientInfo.phone}
+                  onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
+                  placeholder="+7 999 123-45-67"
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Источник</label>
+                <select
+                  value={clientInfo.source}
+                  onChange={(e) => setClientInfo({ ...clientInfo, source: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="Профи">Профи</option>
+                  <option value="Авито">Авито</option>
+                  <option value="hh.ru">hh.ru</option>
+                  <option value="Рекомендация">Рекомендация</option>
+                  <option value="Другое">Другое</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Продукт</label>
+                <select
+                  value={clientInfo.product}
+                  onChange={(e) => setClientInfo({ ...clientInfo, product: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="Рекрутинг">Рекрутинг</option>
+                  <option value="Консалтинг">Консалтинг</option>
+                  <option value="Абонентка">Абонентка</option>
+                  <option value="KPI">KPI</option>
+                  <option value="Адаптация">Адаптация</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Сумма / чек (₽)</label>
+                <input
+                  type="number"
+                  value={clientInfo.sum}
+                  onChange={(e) => setClientInfo({ ...clientInfo, sum: Number(e.target.value) })}
+                  placeholder="50000"
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Проект / вакансия</label>
+                <input
+                  type="text"
+                  value={clientInfo.project}
+                  onChange={(e) => setClientInfo({ ...clientInfo, project: e.target.value })}
+                  placeholder="Менеджер по продажам"
+                  className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+            </div>
+          )}
+          
+          {!showClientForm && clientInfo.contact && (
+            <div className="text-xs text-slate-400">
+              <i className="fas fa-check-circle text-emerald-400 mr-1"></i>
+              Клиент: <span className="text-white">{clientInfo.contact}</span>
+              {clientInfo.company && <span className="ml-2">({clientInfo.company})</span>}
+            </div>
+          )}
         </div>
       )}
 

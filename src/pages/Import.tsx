@@ -64,14 +64,16 @@ export default function Import() {
   };
 
   const parseCSV = (csv: string): any[] => {
-    const lines = csv.trim().split('\n');
+    const lines = csv.trim().split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    // Поддержка разных разделителей
+    const delimiter = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
     const data = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const values = lines[i].split(delimiter).map(v => v.trim().replace(/"/g, ''));
       const obj: any = {};
       headers.forEach((header, index) => {
         obj[header] = values[index] || '';
@@ -100,6 +102,15 @@ export default function Import() {
     }
 
     const data = parseData(fileContent);
+    
+    if (data.length === 0) {
+      alert('Не удалось распарсить данные. Проверьте формат файла.');
+      return;
+    }
+
+    console.log('Распарсенные данные:', data);
+    console.log('Тип импорта:', importType);
+    
     const errors: string[] = [];
     let successCount = 0;
 
@@ -197,10 +208,18 @@ export default function Import() {
       }
 
       setImportResult({ success: successCount, errors });
+      
+      if (successCount > 0) {
+        alert(`✅ Успешно импортировано: ${successCount} записей${errors.length > 0 ? `\n⚠️ Ошибок: ${errors.length}` : ''}`);
+      } else {
+        alert(`❌ Не удалось импортировать данные.\n\nРаспарсено строк: ${data.length}\nТип импорта: ${importType}\n\nОшибки:\n${errors.join('\n') || 'Нет ошибок'}`);
+      }
+      
       setFileContent('');
       setFileName('');
     } catch (err) {
       setImportResult({ success: 0, errors: [err instanceof Error ? err.message : 'Ошибка импорта'] });
+      alert(`❌ Критическая ошибка импорта: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
     }
   };
 
