@@ -1,5 +1,5 @@
+import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useData } from '../contexts/DataContext';
 import {
   DndContext,
   closestCenter,
@@ -36,6 +36,7 @@ const allMenuItems: Record<string, { label: string; icon: string }> = {
   invoices: { label: 'Счета', icon: 'fas fa-file-invoice' },
   expenses: { label: 'Затраты', icon: 'fas fa-receipt' },
   bank: { label: 'Банк', icon: 'fas fa-university' },
+  import: { label: 'Импорт данных', icon: 'fas fa-file-import' },
 };
 
 function SortableMenuItem({
@@ -53,7 +54,6 @@ function SortableMenuItem({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const item = allMenuItems[id];
-  if (!item) return null;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -61,59 +61,71 @@ function SortableMenuItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  if (!item) return null;
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div className={`sidebar-item w-full group ${currentPage === id ? 'active' : ''}`}>
-        {/* Drag handle */}
-        <button
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-slate-300"
-          title="Перетащить для изменения порядка"
-        >
-          <i className="fas fa-grip-vertical text-[10px]"></i>
-        </button>
-        <button
-          onClick={() => onPageChange(id)}
-          className="flex items-center gap-2 flex-1 text-left"
-        >
-          <i className={`${item.icon} w-5 text-center`}></i>
-          {isOpen && (
-            <>
-              <span className="flex-1">{item.label}</span>
-              {badge !== undefined && badge > 0 && (
-                <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
-                  {badge}
-                </span>
-              )}
-            </>
-          )}
-        </button>
-      </div>
-    </div>
+    <li ref={setNodeRef} style={style} {...attributes}>
+      <button
+        onClick={() => onPageChange(id)}
+        className={`sidebar-item w-full ${currentPage === id ? 'active' : ''}`}
+        title={!isOpen ? item.label : undefined}
+      >
+        <span {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+          ⋮⋮
+        </span>
+        <i className={`${item.icon} w-5 text-center`}></i>
+        {isOpen && (
+          <>
+            <span className="flex-1 text-left">{item.label}</span>
+            {badge !== undefined && badge > 0 && (
+              <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
+                {badge}
+              </span>
+            )}
+          </>
+        )}
+      </button>
+    </li>
   );
 }
 
 export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { menuOrder, setMenuOrder, leads, tasks } = useData();
+  
+  const [menuOrder, setMenuOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('crm_menu_order');
+    return saved ? JSON.parse(saved) : [
+      'dashboard',
+      'tasks',
+      'money',
+      'leads',
+      'production',
+      'projects',
+      'marketing',
+      'ai-assistant',
+      'documents',
+      'invoices',
+      'expenses',
+      'bank',
+      'import',
+    ];
+  });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  useEffect(() => {
+    localStorage.setItem('crm_menu_order', JSON.stringify(menuOrder));
+  }, [menuOrder]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = menuOrder.indexOf(active.id as string);
-      const newIndex = menuOrder.indexOf(over.id as string);
-      setMenuOrder(arrayMove(menuOrder, oldIndex, newIndex));
+      setMenuOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
     }
-  };
-
-  const getBadge = (id: string): number | undefined => {
-    if (id === 'tasks') return tasks.filter(t => !t.done).length;
-    if (id === 'leads') return leads.filter(l => l.stage !== 'Отказ' && l.stage !== 'Продажа').length;
-    return undefined;
   };
 
   return (
@@ -141,36 +153,28 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
         </button>
       </div>
 
-      {/* Hint */}
-      {isOpen && (
-        <div className="px-3 pt-2 pb-1">
-          <p className="text-[10px] text-slate-500 italic">
-            <i className="fas fa-info-circle mr-1"></i>
-            Наведите на пункт меню, чтобы перетащить
-          </p>
-        </div>
-      )}
-
       {/* Navigation */}
-      <nav className="p-3 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+      <nav className="p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 160px)' }}>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={menuOrder} strategy={verticalListSortingStrategy}>
-            {menuOrder.map((id) => (
-              <SortableMenuItem
-                key={id}
-                id={id}
-                currentPage={currentPage}
-                onPageChange={onPageChange}
-                isOpen={isOpen}
-                badge={getBadge(id)}
-              />
-            ))}
+            <ul className="space-y-1">
+              {menuOrder.map((id) => (
+                <SortableMenuItem
+                  key={id}
+                  id={id}
+                  currentPage={currentPage}
+                  onPageChange={onPageChange}
+                  isOpen={isOpen}
+                />
+              ))}
+            </ul>
           </SortableContext>
         </DndContext>
       </nav>
 
       {/* Bottom section */}
       <div className="absolute bottom-0 left-0 right-0 p-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+        {/* Theme toggle */}
         <div className={`flex items-center ${isOpen ? 'justify-between px-2' : 'justify-center'} mb-2`}>
           <button
             onClick={toggleTheme}
@@ -188,14 +192,15 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
           )}
         </div>
 
+        {/* User */}
         {isOpen && (
           <div className="flex items-center gap-2 px-2 py-2 rounded-lg" style={{ background: 'var(--bg-input)' }}>
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
               <span className="text-white text-xs font-bold">Л</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>Любовь</p>
-              <p className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>Администратор</p>
+            <div className="flex-1">
+              <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Любовь</p>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Администратор</p>
             </div>
           </div>
         )}

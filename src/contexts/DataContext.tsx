@@ -8,7 +8,7 @@ export interface Lead {
   contact: string;
   phone: string;
   source: string;
-  stage: string;
+  stage: 'Заявка' | 'Диагностика' | 'КП' | 'Договор заключен' | 'Продажа' | 'Отказ' | 'Клиент не отвечает' | 'Спящая база';
   product: string;
   project: string;
   sum: number;
@@ -18,6 +18,7 @@ export interface Lead {
   responsible: string;
   comment: string;
   createdAt: string;
+  sourceLeadId?: string;
 }
 
 export interface Task {
@@ -48,190 +49,385 @@ export interface Project {
   sum: number;
   days: number;
   status: string;
-  responsible: string;
-  leadId?: string;
+  startDate: string;
+  sourceLeadId?: string;
+  endDate?: string;
+  responsible?: string;
 }
 
-export interface Document {
-  id: string;
-  type: 'contract' | 'prepay-act' | 'postpay-act';
-  number: string;
-  date: string;
-  client: string;
-  service: string;
-  sum: number;
-  status: string;
-  projectId?: string;
-}
-
-export interface MenuItem {
-  id: string;
-  label: string;
-  icon: string;
-  badge?: number;
-}
-
-// ============ КОНТЕКСТ ============
 interface DataContextType {
   leads: Lead[];
   tasks: Task[];
-  money: MoneyOperation[];
+  moneyOperations: MoneyOperation[];
   projects: Project[];
-  documents: Document[];
-  menuOrder: string[];
+  
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
-  updateLead: (id: string, lead: Partial<Lead>) => void;
+  updateLead: (id: string, updates: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
+  
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
-  toggleTask: (id: string) => void;
+  updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
-  addMoney: (op: Omit<MoneyOperation, 'id'>) => void;
-  deleteMoney: (id: string) => void;
+  
+  addMoneyOperation: (op: Omit<MoneyOperation, 'id'>) => void;
+  deleteMoneyOperation: (id: string) => void;
+  
   addProject: (project: Omit<Project, 'id'>) => void;
-  addDocument: (doc: Omit<Document, 'id'>) => void;
-  setMenuOrder: (order: string[]) => void;
+  updateProject: (id: string, updates: Partial<Project>) => void;
+  deleteProject: (id: string) => void;
 }
 
-const DataContext = createContext<DataContextType | null>(null);
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// ============ ХРАНИЛИЩЕ ============
-const STORAGE_KEYS = {
-  leads: 'crm_leads',
-  tasks: 'crm_tasks',
-  money: 'crm_money',
-  projects: 'crm_projects',
-  documents: 'crm_documents',
-  menuOrder: 'crm_menu_order',
+// ============ БИЗНЕС-ЛОГИКА ============
+
+// Проверка, является ли продукт консалтингом
+const isConsulting = (product: string, comment: string): boolean => {
+  if (product === 'Консалтинг') {
+    // Проверяем, есть ли слова о вакансиях
+    const recruitingKeywords = ['вакансия', 'кандидат', 'подбор', 'рекрутинг'];
+    const text = `${product} ${comment}`.toLowerCase();
+    return !recruitingKeywords.some(keyword => text.includes(keyword));
+  }
+  return false;
 };
 
-function loadFromStorage<T>(key: string, defaultValue: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : defaultValue;
-  } catch {
-    return defaultValue;
+// Расчет рабочих дней между датами
+const calculateWorkingDays = (startDate: string, endDate: string = new Date().toISOString().split('T')[0]): number => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  let count = 0;
+  const current = new Date(start);
+  
+  while (current <= end) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) { // Исключаем субботу и воскресенье
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
   }
-}
+  
+  return count;
+};
 
-function saveToStorage<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error('Storage error:', e);
+// Проверка, является ли операция внутренним переводом
+const isInternalTransfer = (description: string, counterparty: string): boolean => {
+  const text = `${description} ${counterparty}`.toLowerCase();
+  const transferKeywords = [
+    'между своими',
+    'собственные средства',
+    'перевод на свой счет',
+    'тунёва',
+    'налоговая копилка',
+    'пополнение счета',
+    'снятие со счета'
+  ];
+  return transferKeywords.some(keyword => text.includes(keyword));
+};
+
+// Проверка, является ли операция кредитом
+const isCredit = (description: string, category: string): boolean => {
+  const text = `${description} ${category}`.toLowerCase();
+  const creditKeywords = ['кредит', 'займ', 'выдача кредита'];
+  return category === 'Кредиты' || creditKeywords.some(keyword => text.includes(keyword));
+};
+
+// Определение типа платежа (предоплата/постоплата)
+const detectPaymentType = (description: string, manualType: string): string => {
+  if (manualType) return manualType;
+  
+  const text = description.toLowerCase();
+  if (text.includes('предоплата') || text.includes('аванс') || text.includes('первый платеж')) {
+    return 'Предоплата';
   }
-}
+  if (text.includes('постоплата') || text.includes('доплата') || text.includes('остаток') || text.includes('окончательный платеж')) {
+    return 'Постоплата';
+  }
+  return '';
+};
 
-// ============ НАЧАЛЬНЫЕ ДАННЫЕ ============
-const initialLeads: Lead[] = [
-  { id: '1', date: '31.08.2026', company: '', contact: 'Сергей', phone: '', source: 'Профи', stage: 'Заявка', product: 'Консалтинг', project: 'разработка мотивации', sum: 15000, paid: 0, nextStep: 'Вывести на созвон', nextStepDate: '01.09.2026', responsible: 'Любовь', comment: '', createdAt: '2026-08-31' },
-  { id: '2', date: '31.08.2026', company: '', contact: 'Мария', phone: '', source: 'Профи', stage: 'Заявка', product: 'Консалтинг', project: 'разработка мотивации', sum: 15000, paid: 0, nextStep: '', nextStepDate: '', responsible: 'Любовь', comment: '', createdAt: '2026-08-31' },
-  { id: '3', date: '31.08.2026', company: '', contact: 'Дмитрий', phone: '', source: 'Профи', stage: 'Заявка', product: 'Консалтинг', project: 'консультация', sum: 15000, paid: 0, nextStep: '', nextStepDate: '', responsible: 'Любовь', comment: '', createdAt: '2026-08-31' },
-  { id: '4', date: '31.08.2026', company: '', contact: 'Александра', phone: '', source: 'Профи', stage: 'Заявка', product: 'Рекрутинг', project: 'МОП', sum: 50000, paid: 0, nextStep: '', nextStepDate: '', responsible: 'Любовь', comment: '', createdAt: '2026-08-31' },
-  { id: '5', date: '27.08.2026', company: '', contact: 'Максим', phone: '', source: 'Профи', stage: 'КП', product: 'Рекрутинг', project: 'HRD', sum: 100000, paid: 0, nextStep: '', nextStepDate: '', responsible: 'Любовь', comment: '', createdAt: '2026-08-27' },
-  { id: '6', date: '26.08.2026', company: '', contact: 'Камила', phone: '', source: 'Профи', stage: 'Диагностика', product: 'Рекрутинг', project: 'МОП', sum: 50000, paid: 0, nextStep: '', nextStepDate: '', responsible: 'Любовь', comment: '', createdAt: '2026-08-26' },
-  { id: '7', date: '26.08.2026', company: '', contact: 'Евгений', phone: '', source: 'Аномалия', stage: 'Диагностика', product: 'Рекрутинг', project: 'МОП', sum: 50000, paid: 0, nextStep: 'Созвон', nextStepDate: '03.09.2026', responsible: 'Любовь', comment: '', createdAt: '2026-08-26' },
-];
+// ============ PROVIDER ============
 
-const initialTasks: Task[] = [
-  { id: '1', title: 'Выставить счет и акт: Константин / химик технолог', priority: 'critical', source: 'crm', dueDate: '07.09.2026', done: false, createdAt: '2026-09-01' },
-  { id: '2', title: 'Выставить счет и акт: Юлия / Главный бухгалтер', priority: 'critical', source: 'crm', dueDate: '07.09.2026', done: false, createdAt: '2026-09-01' },
-  { id: '3', title: 'Разобрать зависшую вакансию: парковки / операционный директор', priority: 'important', source: 'crm', dueDate: '07.09.2026', done: false, createdAt: '2026-09-01' },
-  { id: '4', title: 'Выставить счет и акт: Ланторо / РОП', priority: 'critical', source: 'crm', dueDate: '07.09.2026', done: false, createdAt: '2026-09-01' },
-  { id: '5', title: 'Закрыть просроченные касания по лидам: 66', priority: 'important', source: 'crm', dueDate: '07.09.2026', done: false, createdAt: '2026-09-01' },
-];
-
-const initialMoney: MoneyOperation[] = [
-  { id: '1', date: '02.09.2026', type: 'expense', counterparty: 'ИП Кузнецова Е.Л.', category: 'Обучение', paymentType: '', sum: 15000, description: 'Счет № 642' },
-  { id: '2', date: '02.09.2026', type: 'expense', counterparty: 'Тунёва О.Д.', category: 'Вывод на карту', paymentType: '', sum: 10000, description: 'Перевод между счетами' },
-  { id: '3', date: '02.09.2026', type: 'income', counterparty: 'ИП Браун И.В.', category: 'Поступление клиента', paymentType: 'Предоплата', sum: 60000, description: 'Счет №84' },
-  { id: '4', date: '01.09.2026', type: 'expense', counterparty: 'Тунёва О.Д.', category: 'Вывод на карту', paymentType: '', sum: 3000, description: 'Перевод между счетами' },
-  { id: '5', date: '01.09.2026', type: 'income', counterparty: 'ООО "Промнастил"', category: 'Поступление клиента', paymentType: 'Постоплата', sum: 66000, description: 'Счет № 82' },
-];
-
-const initialProjects: Project[] = [
-  { id: '1', client: 'Алена', vacancy: 'ведение на абонентке', sum: 120000, days: 26, status: 'В работе', responsible: 'Любовь' },
-  { id: '2', client: 'ДК Дюкарева', vacancy: 'МОП', sum: 75000, days: 94, status: 'В работе', responsible: 'Любовь' },
-  { id: '3', client: 'Цивиоми', vacancy: 'подбор бухгалтера', sum: 75000, days: 83, status: 'В работе', responsible: 'Любовь' },
-  { id: '4', client: 'Цивиоми', vacancy: 'подбор ГИП', sum: 100000, days: 80, status: 'В работе', responsible: 'Любовь' },
-  { id: '5', client: 'На колесах', vacancy: 'автомеханик, мастер приемщик', sum: 120000, days: 80, status: 'В работе', responsible: 'Любовь' },
-  { id: '6', client: 'Парковки', vacancy: 'операционный директор', sum: 120000, days: 44, status: 'В работе', responsible: 'Любовь' },
-];
-
-const defaultMenuOrder = ['dashboard', 'tasks', 'money', 'leads', 'production', 'projects', 'marketing', 'ai-assistant', 'documents', 'invoices', 'expenses', 'bank'];
-
-// ============ ПРОВАЙДЕР ============
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(() => loadFromStorage(STORAGE_KEYS.leads, initialLeads));
-  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage(STORAGE_KEYS.tasks, initialTasks));
-  const [money, setMoney] = useState<MoneyOperation[]>(() => loadFromStorage(STORAGE_KEYS.money, initialMoney));
-  const [projects, setProjects] = useState<Project[]>(() => loadFromStorage(STORAGE_KEYS.projects, initialProjects));
-  const [documents, setDocuments] = useState<Document[]>(() => loadFromStorage(STORAGE_KEYS.documents, []));
-  const [menuOrder, setMenuOrderState] = useState<string[]>(() => loadFromStorage(STORAGE_KEYS.menuOrder, defaultMenuOrder));
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    const saved = localStorage.getItem('crm_leads');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  useEffect(() => { saveToStorage(STORAGE_KEYS.leads, leads); }, [leads]);
-  useEffect(() => { saveToStorage(STORAGE_KEYS.tasks, tasks); }, [tasks]);
-  useEffect(() => { saveToStorage(STORAGE_KEYS.money, money); }, [money]);
-  useEffect(() => { saveToStorage(STORAGE_KEYS.projects, projects); }, [projects]);
-  useEffect(() => { saveToStorage(STORAGE_KEYS.documents, documents); }, [documents]);
-  useEffect(() => { saveToStorage(STORAGE_KEYS.menuOrder, menuOrder); }, [menuOrder]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('crm_tasks');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const addLead = (lead: Omit<Lead, 'id' | 'createdAt'>) => {
-    const newLead: Lead = { ...lead, id: Date.now().toString(), createdAt: new Date().toISOString().split('T')[0] };
+  const [moneyOperations, setMoneyOperations] = useState<MoneyOperation[]>(() => {
+    const saved = localStorage.getItem('crm_money');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('crm_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Сохранение в localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_leads', JSON.stringify(leads));
+  }, [leads]);
+
+  useEffect(() => {
+    localStorage.setItem('crm_tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem('crm_money', JSON.stringify(moneyOperations));
+  }, [moneyOperations]);
+
+  useEffect(() => {
+    localStorage.setItem('crm_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  // ============ ЛИДЫ ============
+  
+  const addLead = (leadData: Omit<Lead, 'id' | 'createdAt'>) => {
+    const newLead: Lead = {
+      ...leadData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
     setLeads(prev => [newLead, ...prev]);
   };
 
   const updateLead = (id: string, updates: Partial<Lead>) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+    setLeads(prev => {
+      const updated = prev.map(lead => {
+        if (lead.id !== id) return lead;
+        
+        const updatedLead = { ...lead, ...updates };
+        
+        // Логика перехода в спящую базу при "Клиент не отвечает"
+        if (updates.stage === 'Клиент не отвечает') {
+          updatedLead.nextStep = 'Повторное касание';
+          const nextDate = new Date();
+          nextDate.setDate(nextDate.getDate() + 30);
+          updatedLead.nextStepDate = nextDate.toISOString().split('T')[0];
+          updatedLead.stage = 'Спящая база';
+        }
+        
+        // Логика создания проекта при "Договор заключен" или "Продажа"
+        if ((updates.stage === 'Договор заключен' || updates.stage === 'Продажа') && 
+            !isConsulting(lead.product, lead.comment)) {
+          
+          // Проверяем, есть ли уже проект для этого лида
+          const existingProject = projects.find(p => p.sourceLeadId === id);
+          
+          if (!existingProject) {
+            // Создаем новый проект
+            const newProject: Project = {
+              id: Date.now().toString(),
+              client: lead.company || lead.contact,
+              vacancy: lead.project || lead.product,
+              sum: lead.sum,
+              days: 0,
+              status: 'В работе',
+              startDate: new Date().toISOString().split('T')[0],
+              sourceLeadId: id,
+              responsible: lead.responsible,
+            };
+            setProjects(prev => [newProject, ...prev]);
+            
+            // Создаем задачу "Выставить счет и акт"
+            const newTask: Task = {
+              id: (Date.now() + 1).toString(),
+              title: `Выставить счет и акт: ${lead.company || lead.contact} / ${lead.project || lead.product}`,
+              priority: 'critical',
+              source: 'crm',
+              dueDate: new Date().toISOString().split('T')[0],
+              done: false,
+              createdAt: new Date().toISOString(),
+            };
+            setTasks(prev => [newTask, ...prev]);
+          }
+        }
+        
+        return updatedLead;
+      });
+      
+      return updated;
+    });
   };
 
   const deleteLead = (id: string) => {
-    setLeads(prev => prev.filter(l => l.id !== id));
+    setLeads(prev => prev.filter(lead => lead.id !== id));
   };
 
-  const addTask = (task: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = { ...task, id: Date.now().toString(), createdAt: new Date().toISOString().split('T')[0] };
+  // ============ ЗАДАЧИ ============
+  
+  const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
+    const newTask: Task = {
+      ...taskData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
     setTasks(prev => [newTask, ...prev]);
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const updateTask = (id: string, updates: Partial<Task>) => {
+    setTasks(prev => prev.map(task => task.id === id ? { ...task, ...updates } : task));
   };
 
   const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks(prev => prev.filter(task => task.id !== id));
   };
 
-  const addMoney = (op: Omit<MoneyOperation, 'id'>) => {
-    const newOp: MoneyOperation = { ...op, id: Date.now().toString() };
-    setMoney(prev => [newOp, ...prev]);
+  // ============ ФИНАНСЫ ============
+  
+  const addMoneyOperation = (opData: Omit<MoneyOperation, 'id'>) => {
+    // Нормализация данных
+    let normalizedType = opData.type;
+    let normalizedSum = Math.abs(opData.sum);
+    
+    // Исключаем внутренние переводы
+    if (isInternalTransfer(opData.description, opData.counterparty)) {
+      return; // Не добавляем внутренние переводы
+    }
+    
+    // Исключаем кредиты из поступлений
+    if (normalizedType === 'income' && isCredit(opData.description, opData.category)) {
+      return; // Не добавляем кредиты как выручку
+    }
+    
+    // Определяем тип платежа
+    const paymentType = detectPaymentType(opData.description, opData.paymentType);
+    
+    const newOp: MoneyOperation = {
+      ...opData,
+      id: Date.now().toString(),
+      type: normalizedType,
+      sum: normalizedSum,
+      paymentType,
+    };
+    
+    setMoneyOperations(prev => [newOp, ...prev]);
   };
 
-  const deleteMoney = (id: string) => {
-    setMoney(prev => prev.filter(m => m.id !== id));
+  const deleteMoneyOperation = (id: string) => {
+    setMoneyOperations(prev => prev.filter(op => op.id !== id));
   };
 
-  const addProject = (project: Omit<Project, 'id'>) => {
-    const newProject: Project = { ...project, id: Date.now().toString() };
+  // ============ ПРОЕКТЫ ============
+  
+  const addProject = (projectData: Omit<Project, 'id'>) => {
+    const newProject: Project = {
+      ...projectData,
+      id: Date.now().toString(),
+    };
     setProjects(prev => [newProject, ...prev]);
   };
 
-  const addDocument = (doc: Omit<Document, 'id'>) => {
-    const newDoc: Document = { ...doc, id: Date.now().toString() };
-    setDocuments(prev => [newDoc, ...prev]);
+  const updateProject = (id: string, updates: Partial<Project>) => {
+    setProjects(prev => prev.map(project => {
+      if (project.id !== id) return project;
+      
+      const updatedProject = { ...project, ...updates };
+      
+      // Автоматически считаем дни в работе
+      if (updatedProject.status === 'В работе' && updatedProject.startDate) {
+        updatedProject.days = calculateWorkingDays(updatedProject.startDate);
+        
+        // Создаем задачу-напоминание если проект работает больше 30 дней
+        if (updatedProject.days > 30) {
+          const existingTask = tasks.find(t => 
+            t.title.includes(updatedProject.vacancy) && 
+            t.title.includes('зависшую вакансию')
+          );
+          
+          if (!existingTask) {
+            const newTask: Task = {
+              id: Date.now().toString(),
+              title: `Разобрать зависшую вакансию: ${updatedProject.client} / ${updatedProject.vacancy} (${updatedProject.days} раб. дн.)`,
+              priority: updatedProject.days > 60 ? 'critical' : 'important',
+              source: 'crm',
+              dueDate: new Date().toISOString().split('T')[0],
+              done: false,
+              createdAt: new Date().toISOString(),
+            };
+            setTasks(prev => [newTask, ...prev]);
+          }
+        }
+      }
+      
+      // При закрытии проекта создаем задачу "Выставить счет и акт"
+      if (updates.status === 'Закрыт' && project.status !== 'Закрыт') {
+        const newTask: Task = {
+          id: (Date.now() + 1).toString(),
+          title: `Выставить счет и акт: ${updatedProject.client} / ${updatedProject.vacancy}`,
+          priority: 'critical',
+          source: 'crm',
+          dueDate: new Date().toISOString().split('T')[0],
+          done: false,
+          createdAt: new Date().toISOString(),
+        };
+        setTasks(prev => [newTask, ...prev]);
+      }
+      
+      return updatedProject;
+    }));
   };
 
-  const setMenuOrder = (order: string[]) => {
-    setMenuOrderState(order);
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(project => project.id !== id));
   };
+
+  // ============ АВТОМАТИЧЕСКИЕ ЗАДАЧИ ============
+  
+  useEffect(() => {
+    // Проверка просроченных касаний по лидам
+    const today = new Date().toISOString().split('T')[0];
+    
+    leads.forEach(lead => {
+      if (lead.nextStepDate && lead.nextStepDate < today && lead.stage !== 'Отказ' && lead.stage !== 'Спящая база') {
+        const existingTask = tasks.find(t => 
+          t.title.includes(lead.contact) && 
+          t.title.includes('Просрочено касание')
+        );
+        
+        if (!existingTask) {
+          const newTask: Task = {
+            id: Date.now().toString() + Math.random(),
+            title: `Просрочено касание: ${lead.contact} (${lead.company || lead.project})`,
+            priority: 'critical',
+            source: 'crm',
+            dueDate: today,
+            done: false,
+            createdAt: new Date().toISOString(),
+          };
+          setTasks(prev => [newTask, ...prev]);
+        }
+      }
+    });
+  }, [leads, tasks]);
 
   return (
     <DataContext.Provider value={{
-      leads, tasks, money, projects, documents, menuOrder,
-      addLead, updateLead, deleteLead,
-      addTask, toggleTask, deleteTask,
-      addMoney, deleteMoney,
-      addProject, addDocument,
-      setMenuOrder,
+      leads,
+      tasks,
+      moneyOperations,
+      projects,
+      
+      addLead,
+      updateLead,
+      deleteLead,
+      
+      addTask,
+      updateTask,
+      deleteTask,
+      
+      addMoneyOperation,
+      deleteMoneyOperation,
+      
+      addProject,
+      updateProject,
+      deleteProject,
     }}>
       {children}
     </DataContext.Provider>
@@ -239,7 +435,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 }
 
 export function useData() {
-  const ctx = useContext(DataContext);
-  if (!ctx) throw new Error('useData must be used within DataProvider');
-  return ctx;
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within DataProvider');
+  }
+  return context;
 }

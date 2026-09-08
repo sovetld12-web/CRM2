@@ -14,6 +14,7 @@ import Bank from './pages/Bank';
 import Marketing from './pages/Marketing';
 import AIAssistant from './pages/AIAssistant';
 import Documents from './pages/Documents';
+import Import from './pages/Import';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -33,6 +34,7 @@ function AppContent() {
       case 'invoices': return <Invoices />;
       case 'expenses': return <Expenses />;
       case 'bank': return <Bank />;
+      case 'import': return <Import />;
       default: return <Dashboard />;
     }
   };
