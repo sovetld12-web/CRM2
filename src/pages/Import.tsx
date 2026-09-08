@@ -212,13 +212,45 @@ export default function Import() {
         console.log(`📥 Импортируем финансовых операций: ${parsedData.data.bankTransactions.length}`);
         parsedData.data.bankTransactions.forEach((tx: any, index: number) => {
           try {
+            // Определяем тип операции
+            let operationType: 'income' | 'expense' = 'income';
+            let operationSum = Math.abs(tx.sum || tx.amount || 0);
+            
+            // Проверка по полю type
+            if (tx.type) {
+              const typeStr = String(tx.type).toLowerCase();
+              if (typeStr.includes('расход') || typeStr.includes('expense') || typeStr === 'outcome') {
+                operationType = 'expense';
+              } else if (typeStr.includes('поступление') || typeStr.includes('income') || typeStr === 'revenue') {
+                operationType = 'income';
+              }
+            }
+            
+            // Проверка по знаку суммы
+            const rawSum = tx.sum || tx.amount || 0;
+            if (rawSum < 0) {
+              operationType = 'expense';
+              operationSum = Math.abs(rawSum);
+            } else if (rawSum > 0) {
+              operationType = 'income';
+              operationSum = Math.abs(rawSum);
+            }
+            
+            // Проверка по категории
+            const category = (tx.category || '').toLowerCase();
+            if (category.includes('расход') || category.includes('оплата') || category.includes('вывод')) {
+              operationType = 'expense';
+            } else if (category.includes('поступление') || category.includes('оплата от')) {
+              operationType = 'income';
+            }
+            
             addMoneyOperation({
               date: tx.date || new Date().toISOString().split('T')[0],
-              type: tx.type || 'income',
+              type: operationType,
               counterparty: tx.counterparty || '',
               category: tx.category || 'Прочее',
               paymentType: tx.paymentType || '',
-              sum: tx.sum || tx.amount || 0,
+              sum: operationSum,
               description: tx.description || tx.comment || '',
             });
             successCount++;

@@ -1,35 +1,72 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useData } from '../contexts/DataContext';
 
 export default function Bank() {
-  const [selectedMonth, setSelectedMonth] = useState('09.2026');
+  const { moneyOperations } = useData();
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
-  const months = [
-    { id: '09.2026', operations: 5, income: 126000, expense: 28000, result: 98000 },
-    { id: '08.2026', operations: 38, income: 335000, expense: 313209, result: 21791 },
-    { id: '07.2026', operations: 61, income: 325318, expense: 665470, result: -340152 },
-    { id: '06.2026', operations: 39, income: 403000, expense: 342798, result: 60202 },
-    { id: '05.2026', operations: 35, income: 165500, expense: 227380, result: -61880 },
-    { id: '04.2026', operations: 18, income: 166500, expense: 107676, result: 58824 },
-    { id: '03.2026', operations: 46, income: 199000, expense: 193374, result: 5626 },
-    { id: '02.2026', operations: 56, income: 328500, expense: 172925, result: 155575 },
-  ];
+  // Группируем операции по месяцам
+  const monthlyStats = useMemo(() => {
+    const stats: Record<string, { operations: number; income: number; expense: number }> = {};
+    
+    moneyOperations.forEach(op => {
+      const date = new Date(op.date);
+      const monthKey = `${date.getMonth() + 1}.${date.getFullYear()}`;
+      
+      if (!stats[monthKey]) {
+        stats[monthKey] = { operations: 0, income: 0, expense: 0 };
+      }
+      
+      stats[monthKey].operations++;
+      if (op.type === 'income') {
+        stats[monthKey].income += op.sum;
+      } else {
+        stats[monthKey].expense += op.sum;
+      }
+    });
+    
+    // Преобразуем в массив и сортируем по дате (новые сверху)
+    return Object.entries(stats)
+      .map(([id, data]) => ({
+        id,
+        ...data,
+        result: data.income - data.expense
+      }))
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.id.split('.').map(Number);
+        const [bMonth, bYear] = b.id.split('.').map(Number);
+        if (aYear !== bYear) return bYear - aYear;
+        return bMonth - aMonth;
+      });
+  }, [moneyOperations]);
 
-  const bankOperations = [
-    { date: '02.09.2026', type: 'Расход', account: '4080...1859914', counterparty: 'ИП Кузнецова Е.Л.', category: 'Обучение', sum: '-15 000', desc: 'Счет на оплату № 642' },
-    { date: '02.09.2026', type: 'Расход', account: '4081...832441', counterparty: 'Тунёва О.Д.', category: 'Вывод на карту', sum: '-10 000', desc: 'Перевод между счетами' },
-    { date: '02.09.2026', type: 'Поступление', account: '4080...3414834', counterparty: 'ИП Браун И.В.', category: 'Поступление клиента', sum: '+60 000', desc: 'Счет №84 от 02.09.2026' },
-    { date: '01.09.2026', type: 'Расход', account: '4081...832441', counterparty: 'Тунёва О.Д.', category: 'Вывод на карту', sum: '-3 000', desc: 'Перевод между счетами' },
-    { date: '01.09.2026', type: 'Поступление', account: '4070...949214', counterparty: 'ООО "Промнастил"', category: 'Поступление клиента', sum: '+66 000', desc: 'Оплата по счету № 82' },
-  ];
+  // Фильтруем операции по выбранному месяцу
+  const filteredOperations = useMemo(() => {
+    if (!selectedMonth) return moneyOperations;
+    
+    const [month, year] = selectedMonth.split('.').map(Number);
+    return moneyOperations.filter(op => {
+      const date = new Date(op.date);
+      return date.getMonth() + 1 === month && date.getFullYear() === year;
+    });
+  }, [moneyOperations, selectedMonth]);
 
-  const summary = {
-    operations: 341,
-    income: 2192818,
-    expense: 2243892,
-    credits: 477619,
-    cardWithdraw: 842000,
-    netMovement: -51074,
-  };
+  // Общая сводка
+  const summary = useMemo(() => {
+    const income = moneyOperations.filter(op => op.type === 'income').reduce((sum, op) => sum + op.sum, 0);
+    const expense = moneyOperations.filter(op => op.type === 'expense').reduce((sum, op) => sum + op.sum, 0);
+    const credits = moneyOperations.filter(op => op.category?.toLowerCase().includes('кредит')).reduce((sum, op) => sum + op.sum, 0);
+    const cardWithdraw = moneyOperations.filter(op => op.category?.toLowerCase().includes('вывод')).reduce((sum, op) => sum + op.sum, 0);
+    
+    return {
+      operations: moneyOperations.length,
+      income,
+      expense,
+      credits,
+      cardWithdraw,
+      netMovement: income - expense
+    };
+  }, [moneyOperations]);
 
   return (
     <div className="space-y-6">
@@ -83,29 +120,55 @@ export default function Bank() {
           Помесячная сводка
         </h3>
         <div className="space-y-2">
-          {months.map((m, i) => (
-            <button
-              key={i}
-              onClick={() => setSelectedMonth(m.id)}
-              className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
-                selectedMonth === m.id
-                  ? 'bg-indigo-500/10 border border-indigo-500/20'
-                  : 'hover:bg-slate-800/30 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-white w-20">{m.id}</span>
-                <span className="text-xs text-slate-400">{m.operations} опер.</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-emerald-400">+{(m.income / 1000).toFixed(0)}K</span>
-                <span className="text-xs text-red-400">-{(m.expense / 1000).toFixed(0)}K</span>
-                <span className={`text-xs font-medium w-20 text-right ${m.result >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {m.result >= 0 ? '+' : ''}{(m.result / 1000).toFixed(0)}K
-                </span>
-              </div>
-            </button>
-          ))}
+          {monthlyStats.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">Нет данных</p>
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectedMonth(null)}
+                className={`w-full flex items-center justify-between p-3 rounded-lg transition-all mb-2 ${
+                  selectedMonth === null
+                    ? 'bg-indigo-500/10 border border-indigo-500/20'
+                    : 'hover:bg-slate-800/30 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-white">Все месяцы</span>
+                  <span className="text-xs text-slate-400">{moneyOperations.length} опер.</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-emerald-400">+{(summary.income / 1000).toFixed(0)}K</span>
+                  <span className="text-xs text-red-400">-{(summary.expense / 1000).toFixed(0)}K</span>
+                  <span className={`text-xs font-medium w-20 text-right ${summary.netMovement >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {summary.netMovement >= 0 ? '+' : ''}{(summary.netMovement / 1000).toFixed(0)}K
+                  </span>
+                </div>
+              </button>
+              {monthlyStats.map((m, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedMonth(m.id)}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                    selectedMonth === m.id
+                      ? 'bg-indigo-500/10 border border-indigo-500/20'
+                      : 'hover:bg-slate-800/30 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-white w-20">{m.id}</span>
+                    <span className="text-xs text-slate-400">{m.operations} опер.</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-emerald-400">+{(m.income / 1000).toFixed(0)}K</span>
+                    <span className="text-xs text-red-400">-{(m.expense / 1000).toFixed(0)}K</span>
+                    <span className={`text-xs font-medium w-20 text-right ${m.result >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {m.result >= 0 ? '+' : ''}{(m.result / 1000).toFixed(0)}K
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -114,9 +177,9 @@ export default function Bank() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <i className="fas fa-list text-cyan-400"></i>
-            Операции за {selectedMonth}
+            {selectedMonth ? `Операции за ${selectedMonth}` : 'Все операции'}
           </h3>
-          <span className="text-xs text-slate-400">{bankOperations.length} операций</span>
+          <span className="text-xs text-slate-400">{filteredOperations.length} операций</span>
         </div>
         <table className="w-full text-sm">
           <thead>
@@ -130,22 +193,30 @@ export default function Bank() {
             </tr>
           </thead>
           <tbody>
-            {bankOperations.map((op, i) => (
-              <tr key={i} className="table-row">
-                <td className="py-3 text-slate-400 text-xs">{op.date}</td>
-                <td className="py-3">
-                  <span className={`badge ${op.type === 'Поступление' ? 'badge-success' : 'badge-danger'}`}>
-                    {op.type}
-                  </span>
+            {filteredOperations.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-500">
+                  Нет операций
                 </td>
-                <td className="py-3 text-slate-300 text-xs">{op.counterparty}</td>
-                <td className="py-3 text-slate-400 text-xs">{op.category}</td>
-                <td className={`py-3 text-right font-medium ${op.sum.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {op.sum} ₽
-                </td>
-                <td className="py-3 text-slate-500 text-xs truncate max-w-[200px]">{op.desc}</td>
               </tr>
-            ))}
+            ) : (
+              filteredOperations.map((op) => (
+                <tr key={op.id} className="table-row">
+                  <td className="py-3 text-slate-400 text-xs">{op.date}</td>
+                  <td className="py-3">
+                    <span className={`badge ${op.type === 'income' ? 'badge-success' : 'badge-danger'}`}>
+                      {op.type === 'income' ? 'Поступление' : 'Расход'}
+                    </span>
+                  </td>
+                  <td className="py-3 text-slate-300 text-xs">{op.counterparty}</td>
+                  <td className="py-3 text-slate-400 text-xs">{op.category}</td>
+                  <td className={`py-3 text-right font-medium ${op.type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {op.type === 'income' ? '+' : '-'}{op.sum.toLocaleString('ru-RU')} ₽
+                  </td>
+                  <td className="py-3 text-slate-500 text-xs truncate max-w-[200px]">{op.description}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
