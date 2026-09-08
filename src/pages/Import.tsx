@@ -27,6 +27,16 @@ export default function Import() {
       if (importType === 'auto') {
         try {
           const data = JSON.parse(content);
+          
+          // Проверяем формат полного бэкапа CRM
+          if (data.data && typeof data.data === 'object') {
+            console.log('✅ Обнаружен формат: полный бэкап CRM');
+            console.log('📦 Доступные данные:', Object.keys(data.data));
+            // Не устанавливаем importType, так как это полный бэкап
+            // Он будет обработан отдельно в handleImport
+            return;
+          }
+          
           const sample = Array.isArray(data) ? data[0] : data;
           
           if (sample.contact || sample.company || sample.stage) {
@@ -101,6 +111,136 @@ export default function Import() {
       return;
     }
 
+    let parsedData: any;
+    try {
+      parsedData = JSON.parse(fileContent);
+    } catch {
+      alert('Не удалось распарсить JSON. Проверьте формат файла.');
+      return;
+    }
+
+    console.log('📥 Начинаем импорт файла:', fileName);
+    console.log('📊 Структура данных:', Object.keys(parsedData));
+
+    // Проверяем формат полного бэкапа CRM
+    if (parsedData.data && typeof parsedData.data === 'object') {
+      console.log('✅ Обнаружен формат: полный бэкап CRM');
+      console.log('📦 Доступные данные:', Object.keys(parsedData.data));
+      
+      const errors: string[] = [];
+      let successCount = 0;
+      
+      // Импортируем лиды
+      if (parsedData.data.leads && Array.isArray(parsedData.data.leads)) {
+        console.log(`📥 Импортируем лидов: ${parsedData.data.leads.length}`);
+        parsedData.data.leads.forEach((lead: any, index: number) => {
+          try {
+            addLead({
+              date: lead.date || lead.leadCreatedAt || new Date().toISOString().split('T')[0],
+              company: lead.company || '',
+              contact: lead.contact || '',
+              phone: lead.contactHandle || lead.phone || '',
+              source: lead.source || 'Другое',
+              stage: lead.stage || 'Заявка',
+              product: lead.product || 'Рекрутинг',
+              project: lead.project || '',
+              sum: lead.amount || lead.sum || 0,
+              paid: lead.paid || 0,
+              nextStep: lead.nextStep || '',
+              nextStepDate: lead.nextDate || lead.nextStepDate || '',
+              responsible: lead.owner || lead.responsible || 'Любовь',
+              comment: lead.comment || lead.note || '',
+            });
+            successCount++;
+          } catch (err) {
+            errors.push(`Лид ${index + 1}: ${err instanceof Error ? err.message : 'Ошибка'}`);
+          }
+        });
+      }
+      
+      // Импортируем спящую базу
+      if (parsedData.data.sleepingLeads && Array.isArray(parsedData.data.sleepingLeads)) {
+        console.log(`📥 Импортируем спящую базу: ${parsedData.data.sleepingLeads.length}`);
+        parsedData.data.sleepingLeads.forEach((lead: any, index: number) => {
+          try {
+            addSleepingClient({
+              client: lead.company || lead.contact || '',
+              contact: lead.contact || '',
+              phone: lead.contactHandle || lead.phone || '',
+              source: lead.source || 'Завершенный проект',
+              product: lead.product || '',
+              project: lead.project || '',
+              ltv: lead.amount || lead.sum || 0,
+              nextStep: lead.nextStep || '',
+              nextStepDate: lead.nextDate || lead.nextStepDate || '',
+              lastContactDate: lead.lastTouchDate || lead.updatedAt || new Date().toISOString().split('T')[0],
+              comment: lead.comment || lead.note || '',
+            });
+            successCount++;
+          } catch (err) {
+            errors.push(`Спящая база ${index + 1}: ${err instanceof Error ? err.message : 'Ошибка'}`);
+          }
+        });
+      }
+      
+      // Импортируем проекты (заказы)
+      if (parsedData.data.orders && Array.isArray(parsedData.data.orders)) {
+        console.log(`📥 Импортируем проектов: ${parsedData.data.orders.length}`);
+        parsedData.data.orders.forEach((order: any, index: number) => {
+          try {
+            addProject({
+              client: order.company || order.client || '',
+              vacancy: order.vacancy || order.project || '',
+              sum: order.amount || order.sum || 0,
+              days: 0,
+              status: order.status || 'В работе',
+              startDate: order.startDate || order.date || new Date().toISOString().split('T')[0],
+              contact: order.contact || '',
+              phone: order.phone || '',
+              paid: order.paid || 0,
+              comment: order.comment || order.note || '',
+            });
+            successCount++;
+          } catch (err) {
+            errors.push(`Проект ${index + 1}: ${err instanceof Error ? err.message : 'Ошибка'}`);
+          }
+        });
+      }
+      
+      // Импортируем финансовые операции
+      if (parsedData.data.bankTransactions && Array.isArray(parsedData.data.bankTransactions)) {
+        console.log(`📥 Импортируем финансовых операций: ${parsedData.data.bankTransactions.length}`);
+        parsedData.data.bankTransactions.forEach((tx: any, index: number) => {
+          try {
+            addMoneyOperation({
+              date: tx.date || new Date().toISOString().split('T')[0],
+              type: tx.type || 'income',
+              counterparty: tx.counterparty || '',
+              category: tx.category || 'Прочее',
+              paymentType: tx.paymentType || '',
+              sum: tx.sum || tx.amount || 0,
+              description: tx.description || tx.comment || '',
+            });
+            successCount++;
+          } catch (err) {
+            errors.push(`Транзакция ${index + 1}: ${err instanceof Error ? err.message : 'Ошибка'}`);
+          }
+        });
+      }
+      
+      console.log(`✅ Импорт завершен. Успешно: ${successCount}, Ошибок: ${errors.length}`);
+      
+      if (successCount > 0) {
+        alert(`✅ Успешно импортировано: ${successCount} записей\n\nЛидов: ${parsedData.data.leads?.length || 0}\nСпящая база: ${parsedData.data.sleepingLeads?.length || 0}\nПроектов: ${parsedData.data.orders?.length || 0}\nТранзакций: ${parsedData.data.bankTransactions?.length || 0}\n\nСтраница перезагрузится через 2 секунды...`);
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        alert(`❌ Не удалось импортировать данные.\n\nОшибки:\n${errors.join('\n')}`);
+      }
+      
+      return;
+    }
+
+    // Обработка отдельных файлов (не полный бэкап)
     const data = parseData(fileContent);
     
     if (data.length === 0) {
