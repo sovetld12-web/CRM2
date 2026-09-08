@@ -9,23 +9,48 @@ import Modal from '../components/Modal';
 export default function Dashboard() {
   const { leads, moneyOperations, projects, tasks } = useData();
   const [period, setPeriod] = useState<'month' | 'year' | 'all'>('all');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [showDetail, setShowDetail] = useState<string | null>(null);
 
+  // ========== ФИЛЬТРАЦИЯ ПО ПЕРИОДУ ==========
+  const isInPeriod = (dateStr: string): boolean => {
+    if (period === 'all') return true;
+    
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    if (period === 'month') {
+      return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+    }
+    
+    if (period === 'year') {
+      return date.getFullYear() === selectedYear;
+    }
+    
+    return true;
+  };
+
+  // Фильтруем данные по периоду
+  const filteredLeads = leads.filter(l => isInPeriod(l.createdAt || l.date));
+  const filteredMoney = moneyOperations.filter(m => isInPeriod(m.date));
+  const filteredProjects = projects; // Проекты не фильтруем по дате, только по статусу
+
   // ========== РАСЧЁТ МЕТИРИК ==========
-  const totalLeads = leads.length;
-  const activeLeads = leads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).length;
-  const totalSales = leads.filter(l => l.stage === 'Договор заключен' || l.stage === 'Продажа');
+  const totalLeads = filteredLeads.length;
+  const activeLeads = filteredLeads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).length;
+  const totalSales = filteredLeads.filter(l => l.stage === 'Договор заключен' || l.stage === 'Продажа');
   const conversionRate = totalLeads > 0 ? ((totalSales.length / totalLeads) * 100).toFixed(1) : '0';
-  const activeProjects = projects.filter(p => p.status === 'В работе' || p.status === 'active').length;
-  const potentialRevenue = leads
+  const activeProjects = filteredProjects.filter(p => p.status === 'В работе' || p.status === 'active').length;
+  const potentialRevenue = filteredLeads
     .filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage))
     .reduce((acc, l) => acc + l.sum, 0);
 
   // Финансы
-  const totalIncome = moneyOperations
+  const totalIncome = filteredMoney
     .filter(m => m.type === 'income')
     .reduce((acc, m) => acc + m.sum, 0);
-  const totalExpense = moneyOperations
+  const totalExpense = filteredMoney
     .filter(m => m.type === 'expense')
     .reduce((acc, m) => acc + m.sum, 0);
   const netMovement = totalIncome - totalExpense;
@@ -33,20 +58,20 @@ export default function Dashboard() {
 
   // Воронка продаж
   const funnelData = [
-    { name: 'Заявка', value: leads.filter(l => l.stage === 'Заявка').length, color: '#6366f1' },
-    { name: 'Диагностика', value: leads.filter(l => l.stage === 'Диагностика').length, color: '#8b5cf6' },
-    { name: 'КП', value: leads.filter(l => l.stage === 'КП').length, color: '#06b6d4' },
-    { name: 'Договор', value: leads.filter(l => l.stage === 'Договор заключен').length, color: '#10b981' },
-    { name: 'Продажа', value: leads.filter(l => l.stage === 'Продажа').length, color: '#059669' },
+    { name: 'Заявка', value: filteredLeads.filter(l => l.stage === 'Заявка').length, color: '#6366f1' },
+    { name: 'Диагностика', value: filteredLeads.filter(l => l.stage === 'Диагностика').length, color: '#8b5cf6' },
+    { name: 'КП', value: filteredLeads.filter(l => l.stage === 'КП').length, color: '#06b6d4' },
+    { name: 'Договор', value: filteredLeads.filter(l => l.stage === 'Договор заключен').length, color: '#10b981' },
+    { name: 'Продажа', value: filteredLeads.filter(l => l.stage === 'Продажа').length, color: '#059669' },
   ];
 
   // Источники лидов
   const sourceData = [
-    { name: 'Профи', value: leads.filter(l => l.source === 'Профи').length, color: '#6366f1' },
-    { name: 'Авито', value: leads.filter(l => l.source === 'Авито').length, color: '#06b6d4' },
-    { name: 'hh.ru', value: leads.filter(l => l.source === 'hh.ru').length, color: '#ef4444' },
-    { name: 'Рекомендация', value: leads.filter(l => l.source === 'Рекомендация').length, color: '#f59e0b' },
-    { name: 'Другое', value: leads.filter(l => !['Профи', 'Авито', 'hh.ru', 'Рекомендация'].includes(l.source)).length, color: '#8b5cf6' },
+    { name: 'Профи', value: filteredLeads.filter(l => l.source === 'Профи').length, color: '#6366f1' },
+    { name: 'Авито', value: filteredLeads.filter(l => l.source === 'Авито').length, color: '#06b6d4' },
+    { name: 'hh.ru', value: filteredLeads.filter(l => l.source === 'hh.ru').length, color: '#ef4444' },
+    { name: 'Рекомендация', value: filteredLeads.filter(l => l.source === 'Рекомендация').length, color: '#f59e0b' },
+    { name: 'Другое', value: filteredLeads.filter(l => !['Профи', 'Авито', 'hh.ru', 'Рекомендация'].includes(l.source)).length, color: '#8b5cf6' },
   ].filter(s => s.value > 0);
 
   // Динамика по месяцам (имитация)
@@ -67,8 +92,8 @@ export default function Dashboard() {
 
   // Риски
   const risks = [
-    { type: 'warning', text: `${leads.filter(l => l.stage === 'Заявка' && !l.nextStepDate).length} лидов без следующего шага`, icon: 'fas fa-exclamation-triangle' },
-    { type: 'danger', text: `${projects.filter(p => p.days > 30 && (p.status === 'В работе' || p.status === 'active')).length} проектов просрочено (>30 дней)`, icon: 'fas fa-clock' },
+    { type: 'warning', text: `${filteredLeads.filter(l => l.stage === 'Заявка' && !l.nextStepDate).length} лидов без следующего шага`, icon: 'fas fa-exclamation-triangle' },
+    { type: 'danger', text: `${filteredProjects.filter(p => p.days > 30 && (p.status === 'В работе' || p.status === 'active')).length} проектов просрочено (>30 дней)`, icon: 'fas fa-clock' },
     { type: 'info', text: `${tasks.filter(t => !t.done && t.priority === 'critical').length} критических задач`, icon: 'fas fa-tasks' },
   ].filter(r => !r.text.startsWith('0'));
 
@@ -84,9 +109,19 @@ export default function Dashboard() {
   };
 
   // Ожидаемые поступления
-  const expectedPayments = leads
+  const expectedPayments = filteredLeads
     .filter(l => l.stage === 'Договор заключен' || l.stage === 'Продажа')
     .reduce((acc, l) => acc + (l.sum - l.paid), 0);
+
+  // Месяцы для выбора
+  const months = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ];
+
+  // Годы для выбора (последние 3 года)
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
 
   return (
     <div className="space-y-6">
@@ -96,16 +131,51 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-white">Центр управления</h1>
           <p className="text-sm text-slate-400 mt-1">Ключевые показатели продаж, производства и денег</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as any)}
             className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
           >
-            <option value="month">Этот месяц</option>
-            <option value="year">Этот год</option>
+            <option value="month">Месяц</option>
+            <option value="year">Год</option>
             <option value="all">Всё время</option>
           </select>
+          
+          {period === 'month' && (
+            <>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              >
+                {months.map((month, i) => (
+                  <option key={i} value={i}>{month}</option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </>
+          )}
+          
+          {period === 'year' && (
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -418,7 +488,7 @@ export default function Dashboard() {
             Последние действия
           </h3>
           <div className="space-y-2">
-            {leads.slice(0, 5).map((lead) => (
+            {filteredLeads.slice(0, 5).map((lead) => (
               <div key={lead.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/30 transition-all">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-user-plus text-indigo-400 text-xs"></i>
@@ -430,8 +500,8 @@ export default function Dashboard() {
                 <span className="badge badge-info text-[10px]">{lead.stage}</span>
               </div>
             ))}
-            {leads.length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-4">Нет действий</p>
+            {filteredLeads.length === 0 && (
+              <p className="text-sm text-slate-500 text-center py-4">Нет действий за выбранный период</p>
             )}
           </div>
         </div>
@@ -468,7 +538,7 @@ export default function Dashboard() {
               <p className="text-sm text-white">Продажи = лиды на этапах "Договор заключен" + "Продажа"</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-2">Список продаж</p>
+              <p className="text-xs text-slate-400 mb-2">Список продаж ({totalSales.length})</p>
               <div className="space-y-1 max-h-60 overflow-y-auto">
                 {totalSales.map((lead) => (
                   <div key={lead.id} className="flex items-center justify-between p-2 rounded bg-slate-800/30">
@@ -476,6 +546,9 @@ export default function Dashboard() {
                     <span className="text-sm font-bold text-emerald-400">{lead.sum.toLocaleString('ru-RU')} ₽</span>
                   </div>
                 ))}
+                {totalSales.length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-2">Нет продаж за выбранный период</p>
+                )}
               </div>
             </div>
           </div>
@@ -523,9 +596,9 @@ export default function Dashboard() {
               <p className="text-sm text-white">Потенциал = сумма всех активных лидов (исключая Отказ, Спящая база)</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-2">Разбивка по лидам</p>
+              <p className="text-xs text-slate-400 mb-2">Разбивка по лидам ({filteredLeads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).length})</p>
               <div className="space-y-1 max-h-60 overflow-y-auto">
-                {leads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).map((lead) => (
+                {filteredLeads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).map((lead) => (
                   <div key={lead.id} className="flex items-center justify-between p-2 rounded bg-slate-800/30">
                     <div>
                       <p className="text-sm text-white">{lead.contact}</p>
@@ -534,6 +607,9 @@ export default function Dashboard() {
                     <span className="text-sm font-bold text-violet-400">{lead.sum.toLocaleString('ru-RU')} ₽</span>
                   </div>
                 ))}
+                {filteredLeads.filter(l => !['Отказ', 'Спящая база', 'Клиент не отвечает'].includes(l.stage)).length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-2">Нет активных лидов за выбранный период</p>
+                )}
               </div>
             </div>
           </div>
