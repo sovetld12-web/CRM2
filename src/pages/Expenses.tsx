@@ -1,5 +1,7 @@
+import { useState } from 'react';
+
 export default function Expenses() {
-  const expenses = [
+  const [expenses, setExpenses] = useState([
     { date: '13.04.2026', category: 'Доступы / HH', status: 'Оплачено', sum: '10 000', comment: '' },
     { date: '12.03.2026', category: 'Доступы / HH', status: 'Оплачено', sum: '12 000', comment: '' },
     { date: '16.03.2026', category: 'Доступы / HH', status: 'Оплачено', sum: '3 500', comment: '' },
@@ -14,7 +16,28 @@ export default function Expenses() {
     { date: '12.05.2026', category: 'Маркетинг', status: 'Оплачено', sum: '5 000', comment: '' },
     { date: '15.05.2026', category: 'Доступы / HH', status: 'Оплачено', sum: '18 000', comment: '' },
     { date: '20.05.2026', category: 'Прочее', status: 'Оплачено', sum: '6 000', comment: '' },
-  ];
+  ]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ category: '', sum: '', comment: '' });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newExpense = {
+      date: new Date().toLocaleDateString('ru-RU'),
+      category: formData.category,
+      status: 'Оплачено',
+      sum: formData.sum,
+      comment: formData.comment,
+    };
+    setExpenses([newExpense, ...expenses]);
+    setShowForm(false);
+    setFormData({ category: '', sum: '', comment: '' });
+  };
+
+  const deleteExpense = (index: number) => {
+    setExpenses(expenses.filter((_, i) => i !== index));
+  };
 
   const totalSum = expenses.reduce((acc, e) => acc + parseInt(e.sum.replace(/\s/g, '')), 0);
 
@@ -33,7 +56,7 @@ export default function Expenses() {
           <h1 className="text-2xl font-bold text-white">Затраты</h1>
           <p className="text-sm text-slate-400 mt-1">Расходы бизнеса по категориям</p>
         </div>
-        <button className="btn-primary"><i className="fas fa-plus mr-2"></i>Новая затрата</button>
+        <button className="btn-primary" onClick={() => setShowForm(true)}><i className="fas fa-plus mr-2"></i>Новая затрата</button>
       </div>
 
       {/* Stats */}
@@ -84,6 +107,7 @@ export default function Expenses() {
               <th className="text-center pb-3 font-medium">Статус</th>
               <th className="text-right pb-3 font-medium">Сумма</th>
               <th className="text-left pb-3 font-medium">Комментарий</th>
+              <th className="text-center pb-3 font-medium">Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -96,11 +120,77 @@ export default function Expenses() {
                 </td>
                 <td className="py-3 text-right text-red-400 font-medium">-{exp.sum} ₽</td>
                 <td className="py-3 text-slate-500 text-xs">{exp.comment || '—'}</td>
+                <td className="py-3 text-center">
+                  <button onClick={() => deleteExpense(i)} className="text-xs text-red-400 hover:text-red-300">
+                    <i className="fas fa-trash"></i>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Add Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Новая затрата</h2>
+              <button onClick={() => setShowForm(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700/50 text-slate-400">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Категория *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                  required
+                >
+                  <option value="">Выберите категорию</option>
+                  <option value="Доступы / HH">Доступы / HH</option>
+                  <option value="Маркетинг">Маркетинг</option>
+                  <option value="Обучение">Обучение</option>
+                  <option value="ФОТ">ФОТ</option>
+                  <option value="Прочее">Прочее</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Сумма (₽) *</label>
+                <input
+                  type="number"
+                  value={formData.sum}
+                  onChange={(e) => setFormData({ ...formData, sum: e.target.value })}
+                  placeholder="10000"
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Комментарий</label>
+                <input
+                  type="text"
+                  value={formData.comment}
+                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                  placeholder="Описание расхода"
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg text-sm text-slate-300 bg-slate-800/50 border border-slate-700/50">
+                  Отмена
+                </button>
+                <button type="submit" className="btn-primary">
+                  <i className="fas fa-check mr-2"></i>Добавить
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
