@@ -18,6 +18,7 @@ export default function Sidebar({ currentPage, onPageChange, isOpen, onToggle }:
     { id: 'production', label: 'Производство', icon: 'fas fa-briefcase' },
     { id: 'projects', label: 'Проекты', icon: 'fas fa-project-diagram' },
     { id: 'marketing', label: 'Маркетинг', icon: 'fas fa-bullhorn' },
+    { id: 'ai-assistant', label: 'AI-помощник', icon: 'fas fa-robot' },
     { id: 'invoices', label: 'Счета', icon: 'fas fa-file-invoice' },
     { id: 'expenses', label: 'Затраты', icon: 'fas fa-receipt' },
     { id: 'bank', label: 'Банк', icon: 'fas fa-university' },
