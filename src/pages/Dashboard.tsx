@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../contexts/DataContext';
+import { usePeriod } from '../contexts/PeriodContext';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -8,30 +9,10 @@ import Modal from '../components/Modal';
 
 export default function Dashboard() {
   const { leads, moneyOperations, projects, tasks } = useData();
-  const [period, setPeriod] = useState<'month' | 'year' | 'all'>('all');
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const { isInPeriod } = usePeriod();
   const [showDetail, setShowDetail] = useState<string | null>(null);
 
-  // ========== ФИЛЬТРАЦИЯ ПО ПЕРИОДУ ==========
-  const isInPeriod = (dateStr: string): boolean => {
-    if (period === 'all') return true;
-    
-    const date = new Date(dateStr);
-    const now = new Date();
-    
-    if (period === 'month') {
-      return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
-    }
-    
-    if (period === 'year') {
-      return date.getFullYear() === selectedYear;
-    }
-    
-    return true;
-  };
-
-  // Фильтруем данные по периоду
+  // Фильтруем данные по периоду (используем глобальный период из контекста)
   const filteredLeads = leads.filter(l => isInPeriod(l.createdAt || l.date));
   const filteredMoney = moneyOperations.filter(m => isInPeriod(m.date));
   const filteredProjects = projects; // Проекты не фильтруем по дате, только по статусу
@@ -113,70 +94,12 @@ export default function Dashboard() {
     .filter(l => l.stage === 'Договор заключен' || l.stage === 'Продажа')
     .reduce((acc, l) => acc + (l.sum - l.paid), 0);
 
-  // Месяцы для выбора
-  const months = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-  ];
-
-  // Годы для выбора (последние 3 года)
-  const currentYear = new Date().getFullYear();
-  const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Центр управления</h1>
-          <p className="text-sm text-slate-400 mt-1">Ключевые показатели продаж, производства и денег</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as any)}
-            className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-          >
-            <option value="month">Месяц</option>
-            <option value="year">Год</option>
-            <option value="all">Всё время</option>
-          </select>
-          
-          {period === 'month' && (
-            <>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              >
-                {months.map((month, i) => (
-                  <option key={i} value={i}>{month}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              >
-                {years.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </>
-          )}
-          
-          {period === 'year' && (
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          )}
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-white">Центр управления</h1>
+        <p className="text-sm text-slate-400 mt-1">Ключевые показатели продаж, производства и денег</p>
       </div>
 
       {/* KPI Cards */}

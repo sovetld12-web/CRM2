@@ -27,16 +27,38 @@ export interface AIResponse {
 export type AssistantMode = 'sales' | 'chat';
 
 /**
- * Получить API-ключ из переменных окружения
+ * Получить API-ключ из переменных окружения или localStorage
  */
 function getApiKey(): string {
-  const key = import.meta.env.VITE_OPENAI_API_KEY;
-  if (!key) {
-    throw new Error(
-      'API-ключ OpenAI не найден. Добавьте VITE_OPENAI_API_KEY в переменные окружения.'
-    );
+  // Сначала проверяем переменные окружения
+  const envKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (envKey) {
+    return envKey;
   }
-  return key;
+  
+  // Если нет в окружении, проверяем localStorage
+  const localKey = localStorage.getItem('openai_api_key');
+  if (localKey) {
+    return localKey;
+  }
+  
+  throw new Error(
+    'API-ключ OpenAI не найден. Добавьте его в настройках AI-помощника или в переменные окружения VITE_OPENAI_API_KEY.'
+  );
+}
+
+/**
+ * Сохранить API-ключ в localStorage
+ */
+export function saveApiKey(key: string): void {
+  localStorage.setItem('openai_api_key', key);
+}
+
+/**
+ * Получить сохраненный API-ключ
+ */
+export function getSavedApiKey(): string | null {
+  return localStorage.getItem('openai_api_key');
 }
 
 /**
@@ -124,7 +146,7 @@ export async function sendToOpenAI(
  * Проверить, настроен ли API-ключ
  */
 export function isApiConfigured(): boolean {
-  return !!import.meta.env.VITE_OPENAI_API_KEY;
+  return !!(import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key'));
 }
 
 /**

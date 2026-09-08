@@ -38,6 +38,7 @@ const allMenuItems: Record<string, { label: string; icon: string }> = {
   bank: { label: 'Банк', icon: 'fas fa-university' },
   import: { label: 'Импорт данных', icon: 'fas fa-file-import' },
   'sleeping-base': { label: 'Спящая база', icon: 'fas fa-bed' },
+  'data-manager': { label: 'Управление данными', icon: 'fas fa-database' },
 };
 
 function SortableMenuItem({

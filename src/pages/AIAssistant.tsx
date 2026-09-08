@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { sendToOpenAI, isApiConfigured, getCurrentModel, AIMessage, AssistantMode } from '../services/ai';
+import { sendToOpenAI, isApiConfigured, getCurrentModel, AIMessage, AssistantMode, saveApiKey, getSavedApiKey } from '../services/ai';
 
 interface ChatMessage {
   id: string;
@@ -25,6 +25,7 @@ export default function AIAssistant() {
     chat: [],
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(getSavedApiKey() || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -32,6 +33,14 @@ export default function AIAssistant() {
   const currentModel = getCurrentModel();
   const currentMessages = messages[activeTab];
   const currentHistory = conversationHistory[activeTab];
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      saveApiKey(apiKeyInput.trim());
+      alert('API-ключ сохранен!');
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -256,8 +265,32 @@ export default function AIAssistant() {
               <label className="text-xs text-slate-400 mb-1 block">Сообщений в истории</label>
               <p className="text-sm text-slate-300">{currentHistory.length / 2 | 0}</p>
             </div>
+            
+            {/* API Key Input */}
             <div className="sm:col-span-2">
-              <label className="text-xs text-slate-400 mb-1 block">Как настроить</label>
+              <label className="text-xs text-slate-400 mb-1 block">API-ключ OpenAI</label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="sk-..."
+                  className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                />
+                <button
+                  onClick={handleSaveApiKey}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Сохранить
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Получите ключ на <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">platform.openai.com</a>
+              </p>
+            </div>
+            
+            <div className="sm:col-span-2">
+              <label className="text-xs text-slate-400 mb-1 block">Альтернативный способ настройки</label>
               <div className="text-xs text-slate-400 bg-slate-900/50 p-3 rounded-lg font-mono">
                 <p># В переменных окружения Amvera добавьте:</p>
                 <p className="text-indigo-300 mt-1">VITE_OPENAI_API_KEY=sk-...</p>
