@@ -100,6 +100,7 @@ interface DataContextType {
   deleteTask: (id: string) => void;
   
   addMoneyOperation: (op: Omit<MoneyOperation, 'id'>) => void;
+  updateMoneyOperation: (id: string, updates: Partial<MoneyOperation>) => void;
   deleteMoneyOperation: (id: string) => void;
   
   addProject: (project: Omit<Project, 'id'>) => void;
@@ -357,6 +358,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setMoneyOperations(prev => prev.filter(op => op.id !== id));
   };
 
+  const updateMoneyOperation = (id: string, updates: Partial<MoneyOperation>) => {
+    setMoneyOperations(prev => prev.map(op => 
+      op.id === id ? { ...op, ...updates } : op
+    ));
+  };
+
   // ============ ПРОЕКТЫ ============
   
   const addProject = (projectData: Omit<Project, 'id'>) => {
@@ -522,6 +529,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteTask,
       
       addMoneyOperation,
+      updateMoneyOperation,
       deleteMoneyOperation,
       
       addProject,

@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useData, MoneyOperation } from '../contexts/DataContext';
+import Modal from '../components/Modal';
 
 export default function Bank() {
-  const { moneyOperations } = useData();
+  const { moneyOperations, updateMoneyOperation, deleteMoneyOperation } = useData();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [editingOperation, setEditingOperation] = useState<MoneyOperation | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Группируем операции по месяцам
   const monthlyStats = useMemo(() => {
@@ -190,12 +193,13 @@ export default function Bank() {
               <th className="text-left pb-3 font-medium">Категория</th>
               <th className="text-right pb-3 font-medium">Сумма</th>
               <th className="text-left pb-3 font-medium">Описание</th>
+              <th className="text-center pb-3 font-medium">Действия</th>
             </tr>
           </thead>
           <tbody>
             {filteredOperations.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-500">
+                <td colSpan={7} className="py-8 text-center text-slate-500">
                   Нет операций
                 </td>
               </tr>
@@ -214,12 +218,193 @@ export default function Bank() {
                     {op.type === 'income' ? '+' : '-'}{op.sum.toLocaleString('ru-RU')} ₽
                   </td>
                   <td className="py-3 text-slate-500 text-xs truncate max-w-[200px]">{op.description}</td>
+                  <td className="py-3 text-center">
+                    <button
+                      onClick={() => {
+                        setEditingOperation(op);
+                        setShowEditModal(true);
+                      }}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                      title="Редактировать"
+                    >
+                      <i className="fas fa-edit"></i>
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Модальное окно редактирования операции */}
+      {showEditModal && editingOperation && (
+        <EditOperationModal
+          operation={editingOperation}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingOperation(null);
+          }}
+          onSave={(updates) => {
+            updateMoneyOperation(editingOperation.id, updates);
+            setShowEditModal(false);
+            setEditingOperation(null);
+          }}
+          onDelete={() => {
+            if (confirm('Удалить эту операцию?')) {
+              deleteMoneyOperation(editingOperation.id);
+              setShowEditModal(false);
+              setEditingOperation(null);
+            }
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// Компонент модального окна редактирования операции
+function EditOperationModal({
+  operation,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  operation: MoneyOperation;
+  onClose: () => void;
+  onSave: (updates: Partial<MoneyOperation>) => void;
+  onDelete: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    date: operation.date,
+    type: operation.type,
+    counterparty: operation.counterparty,
+    category: operation.category,
+    sum: operation.sum,
+    description: operation.description,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Редактирование операции">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Дата
+            </label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Тип операции
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as 'income' | 'expense' })}
+              className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              required
+            >
+              <option value="income">Поступление</option>
+              <option value="expense">Расход</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            Контрагент
+          </label>
+          <input
+            type="text"
+            value={formData.counterparty}
+            onChange={(e) => setFormData({ ...formData, counterparty: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            Категория (статья)
+          </label>
+          <input
+            type="text"
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            placeholder="Например: Поступление от клиента, Доступы / HH, Маркетинг"
+            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+            required
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Вы можете изменить категорию операции (статью дохода или расхода)
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            Сумма (₽)
+          </label>
+          <input
+            type="number"
+            value={formData.sum}
+            onChange={(e) => setFormData({ ...formData, sum: parseFloat(e.target.value) || 0 })}
+            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            Описание
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500/50 resize-none"
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-all"
+          >
+            <i className="fas fa-trash mr-2"></i>
+            Удалить
+          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 text-slate-300 rounded-lg text-sm hover:border-slate-600 transition-all"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+            >
+              <i className="fas fa-check mr-2"></i>
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
   );
 }
