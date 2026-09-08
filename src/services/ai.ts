@@ -1,4 +1,5 @@
 import { SALES_ASSISTANT_PROMPT } from '../prompts/salesAssistant';
+import { CHAT_ASSISTANT_PROMPT } from '../prompts/chatAssistant';
 
 /**
  * Сервис для работы с OpenAI API.
@@ -23,6 +24,8 @@ export interface AIResponse {
   };
 }
 
+export type AssistantMode = 'sales' | 'chat';
+
 /**
  * Получить API-ключ из переменных окружения
  */
@@ -44,19 +47,38 @@ function getModel(): string {
 }
 
 /**
+ * Получить системный промпт в зависимости от режима
+ */
+function getSystemPrompt(mode: AssistantMode): string {
+  switch (mode) {
+    case 'sales':
+      return SALES_ASSISTANT_PROMPT;
+    case 'chat':
+      return CHAT_ASSISTANT_PROMPT;
+    default:
+      return SALES_ASSISTANT_PROMPT;
+  }
+}
+
+/**
  * Отправить запрос к OpenAI API
+ * @param userMessage - сообщение пользователя
+ * @param conversationHistory - история диалога
+ * @param mode - режим работы ('sales' для конструктора ответов, 'chat' для свободного общения)
  */
 export async function sendToOpenAI(
   userMessage: string,
-  conversationHistory: AIMessage[] = []
+  conversationHistory: AIMessage[] = [],
+  mode: AssistantMode = 'sales'
 ): Promise<AIResponse> {
   try {
     const apiKey = getApiKey();
     const model = getModel();
+    const systemPrompt = getSystemPrompt(mode);
 
     // Формируем массив сообщений
     const messages: AIMessage[] = [
-      { role: 'system', content: SALES_ASSISTANT_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: userMessage },
     ];
@@ -70,7 +92,7 @@ export async function sendToOpenAI(
       body: JSON.stringify({
         model,
         messages,
-        temperature: 0.7,
+        temperature: mode === 'chat' ? 0.7 : 0.6,
         max_tokens: 2000,
       }),
     });
