@@ -4,6 +4,7 @@ import Accordion from '../components/Accordion';
 import MonthlyPlan from '../components/MonthlyPlan';
 import PlanFactForecast from '../components/PlanFactForecast';
 import History from '../components/History';
+import DynamicChart from '../components/DynamicChart';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -168,6 +169,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Динамичный график */}
+      <DynamicChart />
 
       {/* Accordion: План на месяц */}
       <Accordion id="monthly-plan" title="План на месяц" subtitle="Плановые показатели и факт" defaultOpen={true}>

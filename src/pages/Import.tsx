@@ -212,36 +212,70 @@ export default function Import() {
         console.log(`📥 Импортируем финансовых операций: ${parsedData.data.bankTransactions.length}`);
         parsedData.data.bankTransactions.forEach((tx: any, index: number) => {
           try {
-            // Определяем тип операции
-            let operationType: 'income' | 'expense' = 'income';
+            // Определяем тип операции с приоритетом проверок
+            let operationType: 'income' | 'expense' | null = null;
             let operationSum = Math.abs(tx.sum || tx.amount || 0);
             
-            // Проверка по полю type
+            // 1. Проверка по полю type (самый надёжный источник)
             if (tx.type) {
               const typeStr = String(tx.type).toLowerCase();
-              if (typeStr.includes('расход') || typeStr.includes('expense') || typeStr === 'outcome') {
+              if (typeStr.includes('расход') || typeStr.includes('expense') || typeStr === 'outcome' || typeStr === 'расход') {
                 operationType = 'expense';
-              } else if (typeStr.includes('поступление') || typeStr.includes('income') || typeStr === 'revenue') {
+              } else if (typeStr.includes('поступление') || typeStr.includes('income') || typeStr === 'revenue' || typeStr === 'поступление') {
                 operationType = 'income';
               }
             }
             
-            // Проверка по знаку суммы
-            const rawSum = tx.sum || tx.amount || 0;
-            if (rawSum < 0) {
-              operationType = 'expense';
-              operationSum = Math.abs(rawSum);
-            } else if (rawSum > 0) {
-              operationType = 'income';
-              operationSum = Math.abs(rawSum);
+            // 2. Если type не дал результата, проверяем знак суммы
+            if (operationType === null) {
+              const rawSum = tx.sum || tx.amount || 0;
+              if (rawSum < 0) {
+                operationType = 'expense';
+                operationSum = Math.abs(rawSum);
+              } else if (rawSum > 0) {
+                operationType = 'income';
+                operationSum = Math.abs(rawSum);
+              }
             }
             
-            // Проверка по категории
-            const category = (tx.category || '').toLowerCase();
-            if (category.includes('расход') || category.includes('оплата') || category.includes('вывод')) {
-              operationType = 'expense';
-            } else if (category.includes('поступление') || category.includes('оплата от')) {
+            // 3. Если и это не дало результата, проверяем категорию
+            if (operationType === null) {
+              const category = (tx.category || '').toLowerCase();
+              const description = (tx.description || tx.comment || '').toLowerCase();
+              const fullText = `${category} ${description}`;
+              
+              // Расходы
+              if (fullText.includes('расход') || 
+                  fullText.includes('вывод') || 
+                  fullText.includes('оплата поставщику') ||
+                  fullText.includes('оплата услуг') ||
+                  fullText.includes('зарплата') ||
+                  fullText.includes('налог')) {
+                operationType = 'expense';
+              } 
+              // Поступления
+              else if (fullText.includes('поступление') || 
+                       fullText.includes('оплата от клиента') ||
+                       fullText.includes('предоплата') ||
+                       fullText.includes('постоплата') ||
+                       fullText.includes('возврат')) {
+                operationType = 'income';
+              }
+            }
+            
+            // Если всё ещё не определили, по умолчанию income
+            if (operationType === null) {
               operationType = 'income';
+            }
+            
+            // Логируем для отладки
+            if (index < 5) {
+              console.log(`🔍 Транзакция ${index + 1}:`, {
+                type: tx.type,
+                sum: tx.sum,
+                category: tx.category,
+                determined: operationType
+              });
             }
             
             addMoneyOperation({

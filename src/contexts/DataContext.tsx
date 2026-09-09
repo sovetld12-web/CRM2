@@ -168,16 +168,30 @@ const isCredit = (description: string, category: string): boolean => {
 };
 
 // Определение типа платежа (предоплата/постоплата)
-const detectPaymentType = (description: string, manualType: string): string => {
+const detectPaymentType = (description: string, manualType: string, category?: string): string => {
   if (manualType) return manualType;
   
-  const text = description.toLowerCase();
-  if (text.includes('предоплата') || text.includes('аванс') || text.includes('первый платеж')) {
+  const text = `${description} ${category || ''}`.toLowerCase();
+  
+  // Предоплата
+  if (text.includes('предоплата') || 
+      text.includes('аванс') || 
+      text.includes('первый платеж') ||
+      text.includes('30%') ||
+      text.includes('начальный взнос')) {
     return 'Предоплата';
   }
-  if (text.includes('постоплата') || text.includes('доплата') || text.includes('остаток') || text.includes('окончательный платеж')) {
+  
+  // Постоплата
+  if (text.includes('постоплата') || 
+      text.includes('доплата') || 
+      text.includes('остаток') || 
+      text.includes('окончательный платеж') ||
+      text.includes('70%') ||
+      text.includes('финальный платеж')) {
     return 'Постоплата';
   }
+  
   return '';
 };
 
@@ -341,7 +355,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     
     // Определяем тип платежа
-    const paymentType = detectPaymentType(opData.description, opData.paymentType);
+    const paymentType = detectPaymentType(opData.description, opData.paymentType, opData.category);
     
     const newOp: MoneyOperation = {
       ...opData,
