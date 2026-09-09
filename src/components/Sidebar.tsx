@@ -36,9 +36,8 @@ const allMenuItems: Record<string, { label: string; icon: string; highlight?: bo
   invoices: { label: 'Счета', icon: 'fas fa-file-invoice' },
   expenses: { label: 'Затраты', icon: 'fas fa-receipt' },
   bank: { label: 'Банк', icon: 'fas fa-university' },
-  import: { label: '📥 Импорт данных', icon: 'fas fa-file-import', highlight: true },
   'sleeping-base': { label: 'Спящая база', icon: 'fas fa-bed' },
-  'data-manager': { label: 'Загрузка данных', icon: 'fas fa-cloud-upload-alt', highlight: true },
+  'data-manager': { label: '💾 Управление данными', icon: 'fas fa-cloud-upload-alt', highlight: true },
 };
 
 function SortableMenuItem({
