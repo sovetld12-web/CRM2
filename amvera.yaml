@@ -1,6 +1,12 @@
 version: '1'
+
 build:
-  dockerfile: Dockerfile
+  type: node
+  node_version: '20'
+  commands:
+    - npm install
+    - npm run build
+
 run:
   command: node server.js
   port: 3000
@@ -9,9 +15,12 @@ run:
     interval: 10s
     timeout: 5s
     retries: 3
+
 env:
   - name: OPENAI_API_KEY
     required: true
+
 artifacts:
   - dist
   - server.js
+  - package.json
