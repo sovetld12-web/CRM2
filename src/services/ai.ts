@@ -28,37 +28,27 @@ export type AssistantMode = 'sales' | 'chat';
 
 /**
  * Получить API-ключ из переменных окружения или localStorage
+ * Примечание: API-ключ теперь на сервере, эта функция для обратной совместимости
  */
 function getApiKey(): string {
-  // Сначала проверяем переменные окружения
-  const envKey = import.meta.env.VITE_OPENAI_API_KEY;
-  if (envKey) {
-    return envKey;
-  }
-  
-  // Если нет в окружении, проверяем localStorage
-  const localKey = localStorage.getItem('openai_api_key');
-  if (localKey) {
-    return localKey;
-  }
-  
-  throw new Error(
-    'API-ключ OpenAI не найден. Добавьте его в настройках AI-помощника или в переменные окружения VITE_OPENAI_API_KEY.'
-  );
+  // API-ключ теперь на сервере, возвращаем заглушку
+  return 'server-proxy';
 }
 
 /**
  * Сохранить API-ключ в localStorage
+ * Примечание: API-ключ теперь на сервере, эта функция для обратной совместимости
  */
 export function saveApiKey(key: string): void {
-  localStorage.setItem('openai_api_key', key);
+  console.log('API-ключ теперь настраивается на сервере Amvera через переменную OPENAI_API_KEY');
 }
 
 /**
  * Получить сохраненный API-ключ
+ * Примечание: API-ключ теперь на сервере
  */
 export function getSavedApiKey(): string | null {
-  return localStorage.getItem('openai_api_key');
+  return null;
 }
 
 /**
@@ -94,7 +84,6 @@ export async function sendToOpenAI(
   mode: AssistantMode = 'sales'
 ): Promise<AIResponse> {
   try {
-    const apiKey = getApiKey();
     const model = getModel();
     const systemPrompt = getSystemPrompt(mode);
 
@@ -105,17 +94,15 @@ export async function sendToOpenAI(
       { role: 'user', content: userMessage },
     ];
 
-    const response = await fetch(OPENAI_API_URL, {
+    // Используем серверный прокси вместо прямого запроса к OpenAI
+    const response = await fetch('/api/openai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
         messages,
-        temperature: mode === 'chat' ? 0.7 : 0.6,
-        max_tokens: 2000,
       }),
     });
 
@@ -144,9 +131,10 @@ export async function sendToOpenAI(
 
 /**
  * Проверить, настроен ли API-ключ
+ * Примечание: API-ключ теперь на сервере, всегда возвращаем true
  */
 export function isApiConfigured(): boolean {
-  return !!(import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key'));
+  return true;
 }
 
 /**

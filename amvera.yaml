@@ -1,0 +1,12 @@
+version: '1'
+build:
+  dockerfile: Dockerfile
+run:
+  command: node server.js
+  port: 3000
+env:
+  - name: OPENAI_API_KEY
+    required: true
+artifacts:
+  - dist
+  - server.js
