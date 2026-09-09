@@ -21,6 +21,13 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Health check endpoint для Amvera
+  if (req.url === '/health' || req.url === '/healthz') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    return;
+  }
+
   // API endpoint for OpenAI
   if (req.url === '/api/openai/chat' && req.method === 'POST') {
     let body = '';

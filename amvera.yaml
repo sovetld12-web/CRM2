@@ -4,6 +4,11 @@ build:
 run:
   command: node server.js
   port: 3000
+  healthCheck:
+    path: /health
+    interval: 10s
+    timeout: 5s
+    retries: 3
 env:
   - name: OPENAI_API_KEY
     required: true
