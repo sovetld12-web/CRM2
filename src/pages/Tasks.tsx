@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useData, Task } from '../contexts/DataContext';
+import Modal from '../components/Modal';
 
 export default function Tasks() {
   const { tasks, addTask, updateTask, deleteTask } = useData();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all');
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     priority: 'normal' as 'critical' | 'important' | 'normal',
@@ -129,12 +132,25 @@ export default function Tasks() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => deleteTask(task.id)}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
-            >
-              <i className="fas fa-trash"></i>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingTask(task);
+                  setShowEditModal(true);
+                }}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                title="Редактировать"
+              >
+                <i className="fas fa-edit"></i>
+              </button>
+              <button
+                onClick={() => deleteTask(task.id)}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                title="Удалить"
+              >
+                <i className="fas fa-trash"></i>
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -195,6 +211,91 @@ export default function Tasks() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Edit Task Modal */}
+      {showEditModal && editingTask && (
+        <Modal isOpen={true} onClose={() => {
+          setShowEditModal(false);
+          setEditingTask(null);
+        }} title="Редактирование задачи">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const title = (form.elements.namedItem('title') as HTMLInputElement).value;
+            const priority = (form.elements.namedItem('priority') as HTMLSelectElement).value as 'critical' | 'important' | 'normal';
+            const dueDate = (form.elements.namedItem('dueDate') as HTMLInputElement).value;
+            
+            updateTask(editingTask.id, { title, priority, dueDate });
+            setShowEditModal(false);
+            setEditingTask(null);
+          }} className="space-y-4">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Название задачи *</label>
+              <input
+                type="text"
+                name="title"
+                defaultValue={editingTask.title}
+                placeholder="Описание задачи"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Приоритет *</label>
+              <select
+                name="priority"
+                defaultValue={editingTask.priority}
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                required
+              >
+                <option value="normal">Нормально</option>
+                <option value="important">Важно</option>
+                <option value="critical">Критично</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Срок выполнения *</label>
+              <input
+                type="date"
+                name="dueDate"
+                defaultValue={editingTask.dueDate}
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+                required
+              />
+            </div>
+            <div className="flex justify-between items-center pt-4 border-t border-slate-700/50">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Удалить эту задачу?')) {
+                    deleteTask(editingTask.id);
+                    setShowEditModal(false);
+                    setEditingTask(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
+              >
+                <i className="fas fa-trash mr-2"></i>Удалить
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingTask(null);
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm text-slate-300 bg-slate-800/50 border border-slate-700/50"
+                >
+                  Отмена
+                </button>
+                <button type="submit" className="btn-primary">
+                  <i className="fas fa-check mr-2"></i>Сохранить
+                </button>
+              </div>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
