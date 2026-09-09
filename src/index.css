@@ -1,0 +1,460 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: #6366f1;
+    --color-primary-dark: #4f46e5;
+    --color-accent: #06b6d4;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+  }
+
+  /* Dark theme (default) */
+  html.dark,
+  html:not(.light) {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-card-hover: rgba(30, 41, 59, 0.95);
+    --bg-input: rgba(15, 23, 42, 0.6);
+    --border-color: rgba(99, 102, 241, 0.1);
+    --border-hover: rgba(99, 102, 241, 0.3);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.2);
+    --sidebar-bg: rgba(15, 23, 42, 0.95);
+    --table-row-hover: rgba(99, 102, 241, 0.03);
+  }
+
+  /* Light theme */
+  html.light {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+    --bg-input: rgba(241, 245, 249, 0.8);
+    --border-color: rgba(99, 102, 241, 0.12);
+    --border-hover: rgba(99, 102, 241, 0.35);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
+    --sidebar-bg: rgba(255, 255, 255, 0.95);
+    --table-row-hover: rgba(99, 102, 241, 0.04);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #1e293b;
+  }
+
+  html.light * {
+    scrollbar-color: #cbd5e1 #f1f5f9;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  html.light *::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+
+  html.light *::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  html.light .glass-card {
+    box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .glass-card-hover:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+    transition: all 0.3s ease;
+  }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .metric-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+  }
+
+  .sidebar-container {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    backdrop-filter: blur(16px);
+    transition: all 0.3s ease;
+  }
+
+  html.light .sidebar-container {
+    box-shadow: 1px 0 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .sidebar-item:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--text-primary);
+  }
+
+  .sidebar-item.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+  }
+
+  html.light .sidebar-item.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.04));
+    color: #4f46e5;
+  }
+
+  .funnel-step {
+    position: relative;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .funnel-step:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-hover);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  html.light .badge-success {
+    background: rgba(16, 185, 129, 0.08);
+    color: #059669;
+  }
+
+  .badge-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  html.light .badge-warning {
+    background: rgba(245, 158, 11, 0.08);
+    color: #d97706;
+  }
+
+  .badge-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  html.light .badge-danger {
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+  }
+
+  .badge-info {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+  }
+
+  html.light .badge-info {
+    background: rgba(6, 182, 212, 0.08);
+    color: #0891b2;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+  }
+
+  .table-row {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s ease;
+  }
+
+  .table-row:hover {
+    background: var(--table-row-hover);
+  }
+
+  .progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(51, 65, 85, 0.5);
+    overflow: hidden;
+  }
+
+  html.light .progress-bar {
+    background: rgba(226, 232, 240, 0.8);
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6366f1, #06b6d4);
+    transition: width 0.5s ease;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #a5b4fc, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  html.light .gradient-text {
+    background: linear-gradient(135deg, #4f46e5, #0891b2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kanban-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .kanban-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .input-field {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Theme toggle button */
+  .theme-toggle {
+    width: 48px;
+    height: 26px;
+    border-radius: 13px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .theme-toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .theme-toggle.light::after {
+    transform: translateX(22px);
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+  }
+
+  /* Marketing specific */
+  .channel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .channel-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .roi-positive {
+    color: #10b981;
+  }
+
+  .roi-negative {
+    color: #ef4444;
+  }
+
+  html.light .roi-positive {
+    color: #059669;
+  }
+
+  html.light .roi-negative {
+    color: #dc2626;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .glass-card {
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .metric-card {
+      padding: 0.75rem;
+    }
+
+    .sidebar-item {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    table {
+      font-size: 0.75rem;
+    }
+
+    th, td {
+      padding: 0.5rem 0.25rem;
+    }
+
+    .btn-primary {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+    }
+
+    input, select, textarea {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .glass-card {
+      padding: 0.75rem;
+    }
+
+    .metric-card {
+      padding: 0.5rem;
+    }
+
+    .metric-card p:first-child {
+      font-size: 1.25rem;
+    }
+
+    .metric-card p:last-child {
+      font-size: 0.65rem;
+    }
+  }
+}

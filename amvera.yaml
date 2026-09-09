@@ -1,0 +1,16 @@
+meta:
+  name: crm-lubov
+  type: node
+
+build:
+  commands:
+    - npm install
+    - npm run build
+
+run:
+  command: node server.js
+  port: 3000
+
+env:
+  - name: OPENAI_API_KEY
+    required: true
